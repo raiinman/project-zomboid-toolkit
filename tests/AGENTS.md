@@ -10,6 +10,9 @@ worker responsiveness, trusted inline Lua, built-in editors, actual status,
 readable controls and absence of mod/folder/scenario setup UI.
 `test_inline_tools.py` owns inline transport without workspace/report creation,
 editor allowlists, strict god-mode booleans and tracked-game install guards.
+Compiler-free operation fixtures cover strict framing, authentication, expiry,
+replay, malformed arguments and exact built-in callbacks. GUI checks distinguish
+connection from Lua availability and recover text wrapping after small layouts.
 `test_discovery.py` owns fixture-based Steam/common-folder detection, ambiguity,
 read bounds and preservation checks for internal and legacy discovery.
 Lua mocks also cover god-mode spawn/respawn/fallback, guarded startup, manual

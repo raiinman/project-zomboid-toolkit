@@ -105,6 +105,50 @@ local function respond(id, ok, message)
         .. ',"ok":' .. tostring(ok) .. ',"message":' .. json_string(message) .. '}')
 end
 
+-- Predefined commands work without loadstring (removed in Build 42.20.4).
+-- Never evaluate command fields as source or resolve arbitrary function names.
+local editors = {
+    debug = { 'Debug menu', function()
+        require 'DebugUIs/DebugMenu/ISDebugMenu'
+        assert(ISDebugMenu and type(ISDebugMenu.OnOpenPanel) == 'function', 'Debug menu unavailable')
+        ISDebugMenu.OnOpenPanel()
+    end },
+    vehicle = { 'Vehicle editor', function()
+        assert(type(showVehicleEditor) == 'function', 'Vehicle editor unavailable')
+        showVehicleEditor(nil)
+    end },
+    attachment = { 'Attachment editor', function()
+        assert(type(showAttachmentEditor) == 'function', 'Attachment editor unavailable')
+        showAttachmentEditor()
+    end },
+    animation = { 'Animation viewer', function()
+        assert(type(showAnimationViewer) == 'function', 'Animation viewer unavailable')
+        showAnimationViewer()
+    end },
+    world_map = { 'World map editor', function()
+        assert(type(showWorldMapEditor) == 'function', 'World map editor unavailable')
+        showWorldMapEditor(nil)
+    end },
+}
+
+local function run_operation(lines)
+    assert(#lines == 6, 'invalid operation frame')
+    local operation, value = lines[5], lines[6]
+    if operation == 'god_mode' then
+        assert(value == 'true' or value == 'false', 'enabled must be true or false')
+        local enabled = value == 'true'
+        local player = assert(getPlayer(), 'Player not loaded')
+        player:setGodMod(enabled)
+        assert(player:isGodMod() == enabled, 'God mode change did not apply')
+        return enabled and 'God mode enabled' or 'God mode disabled'
+    elseif operation == 'editor_open' then
+        local editor = assert(editors[value], 'Unknown editor')
+        editor[2]()
+        return 'Requested ' .. editor[1] .. '; window visibility is not verified'
+    end
+    error('Unknown bridge operation')
+end
+
 local function poll(now, token)
     local lines = read_lines('pzt-request.txt', MAX_REQUEST_BYTES)
     if not lines or lines[1] ~= token then return end
@@ -120,6 +164,15 @@ local function poll(now, token)
     end
     local source = table.concat(lines, '\n', 4)
     print('[PZToolkitBridge] BEGIN ' .. id)
+    if lines[4] == 'PZT-OP/1' then
+        local ok, result = pcall(run_operation, lines)
+        respond(id, ok, ok and result or 'operation error: ' .. tostring(result))
+        return
+    end
+    if type(loadstring) ~= 'function' then
+        respond(id, false, 'Lua compiler unavailable; built-in god mode and editor commands remain available')
+        return
+    end
     local compiled, chunk, compile_error = pcall(loadstring, source, 'pzt-scenario-' .. id)
     if not compiled or not chunk then
         respond(id, false, 'syntax error: ' .. tostring(compile_error or chunk))
@@ -146,9 +199,7 @@ local function on_tick()
     enable_startup_god_mode(player, token)
     local compiler_available = type(loadstring) == 'function'
     local reason = 'ready'
-    if not compiler_available then
-        reason = 'Lua compiler unavailable'
-    elseif getDebug() ~= true then
+    if getDebug() ~= true then
         reason = 'debug mode required'
     elseif isClient() or isServer() then
         reason = 'single-player world required'
@@ -165,6 +216,8 @@ local function on_tick()
             .. ',"timestamp_ms":' .. string.format('%.0f', now)
             .. ',"build":' .. json_string(getCore():getVersion())
             .. ',"lua_compiler":' .. tostring(compiler_available)
+            .. ',"lua_execution_available":' .. tostring(ready and compiler_available)
+            .. ',"operations_available":' .. tostring(ready)
             .. ',"debug":' .. tostring(getDebug() == true)
             .. ',"single_player":' .. tostring(not isClient() and not isServer())
             .. ',"player_loaded":' .. tostring(player ~= nil)

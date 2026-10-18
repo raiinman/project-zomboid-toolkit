@@ -17,7 +17,8 @@ def toolkit(tmp_path):
     instance = Toolkit(config)
     instance.profile_prepare()
     atomic_text(instance.profile / 'Lua/pzt-status.txt', json.dumps({
-        'ready': True, 'timestamp_ms': time.time() * 1000, 'build': 'fixture'}))
+        'ready': True, 'timestamp_ms': time.time() * 1000, 'build': 'fixture',
+        'operations_available': True, 'lua_execution_available': True}))
     return instance
 
 
@@ -99,13 +100,15 @@ def test_inline_malformed_correlated_response_is_not_a_pass(toolkit):
 
 
 @pytest.mark.parametrize('enabled', [True, False])
-def test_god_mode_uses_verified_inline_command(toolkit, enabled):
+def test_god_mode_uses_predefined_command_without_compiler(toolkit, enabled):
+    atomic_text(toolkit.profile / 'Lua/pzt-status.txt', json.dumps({
+        'ready': True, 'timestamp_ms': time.time() * 1000, 'build': '42.20.4',
+        'operations_available': True, 'lua_execution_available': False, 'lua_compiler': False}))
     requests, worker = fake_response(toolkit)
     assert toolkit.call('god_mode', {'enabled': enabled})['ok'] is True
     worker.join()
     value = str(enabled).lower()
-    assert f'player:setGodMod({value})' in requests[0]
-    assert f'player:isGodMod() == {value}' in requests[0]
+    assert requests == [f'PZT-OP/1\ngod_mode\n{value}']
     assert not toolkit.workspace.exists()
 
 
@@ -132,8 +135,28 @@ def test_editor_list_is_read_only_and_open_requests_only_allowlisted_api(toolkit
     requests, worker = fake_response(toolkit)
     assert toolkit.editor_open('vehicle')['ok'] is True
     worker.join()
-    assert 'showVehicleEditor(nil)' in requests[0]
-    assert 'visibility is not verified' in requests[0]
+    assert requests == ['PZT-OP/1\neditor_open\nvehicle']
+
+
+def test_inline_without_compiler_fails_before_writing_but_builtins_remain_available(toolkit):
+    atomic_text(toolkit.profile / 'Lua/pzt-status.txt', json.dumps({
+        'ready': True, 'timestamp_ms': time.time() * 1000, 'lua_compiler': False,
+        'operations_available': True, 'lua_execution_available': False}))
+    with pytest.raises(ValueError, match='compiler unavailable'):
+        toolkit.lua_execute('return true')
+    assert not (toolkit.profile / 'Lua/pzt-request.txt').exists()
+    requests, worker = fake_response(toolkit)
+    assert toolkit.editor_open('debug')['ok'] is True
+    worker.join()
+    assert requests == ['PZT-OP/1\neditor_open\ndebug']
+
+
+def test_builtin_commands_require_updated_bridge_before_writing(toolkit):
+    atomic_text(toolkit.profile / 'Lua/pzt-status.txt', json.dumps({
+        'ready': True, 'timestamp_ms': time.time() * 1000, 'lua_compiler': True}))
+    with pytest.raises(ValueError, match='Bridge needs an update'):
+        toolkit.god_mode()
+    assert not (toolkit.profile / 'Lua/pzt-request.txt').exists()
 
 
 @pytest.mark.parametrize('editor', ['unknown', "vehicle'); error('injected", '../vehicle', ''])

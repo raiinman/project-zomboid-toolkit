@@ -32,3 +32,7 @@ Lua already running. Editor requests are not proof that a window appeared.
 
 Offline packaging checks do not establish live game acceptance. Current evidence
 and source: https://github.com/raiinman/project-zomboid-toolkit
+
+On Build 42.20.4, god mode and built-in editor commands work without a Lua
+compiler. Custom Lua is unavailable in that build; the app explains this
+separately from the game connection.

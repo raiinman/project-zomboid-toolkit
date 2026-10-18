@@ -310,3 +310,32 @@ def test_trusted_code_snapshot_blocks_edits_before_modified_event(app):
     press(app, "Run Lua command")
     assert not app.busy
     assert not app.trusted.get()
+
+
+def test_text_wrap_recovers_after_initial_small_layout_and_resize(app):
+    from types import SimpleNamespace
+    label = next(child for child in app.connection.winfo_children()
+                 if isinstance(child, ttk.Label) and int(child.cget('wraplength') or 0))
+    app.resize_page(SimpleNamespace(widget=app.connection, width=20))
+    assert int(label.cget('wraplength')) == 300
+    app.resize_page(SimpleNamespace(widget=app.connection, width=1000))
+    assert int(label.cget('wraplength')) == 800
+    app.resize_page(SimpleNamespace(widget=app.connection, width=700))
+    assert int(label.cget('wraplength')) == 655
+    app.resize_page(SimpleNamespace(widget=app.connection, width=1000))
+    assert int(label.cget('wraplength')) == 800
+
+
+def test_no_compiler_keeps_builtin_tools_available_and_explains_lua(app, monkeypatch):
+    monkeypatch.setattr(app.toolkit, 'bridge_status', lambda: {
+        'ready': True, 'god_mode': True, 'operations_available': True,
+        'lua_execution_available': False})
+    press(app, 'Check connection')
+    wait(app)
+    assert app.connected
+    assert str(app.lua_button.cget('state')) == 'disabled'
+    assert 'God mode and built-in editors still work' in app.lua_help.get()
+    assert str(next(b for b in app.actions if b.cget('text') == 'God mode on').cget('state')) == 'normal'
+    app.run_lua()
+    assert not app.busy
+    assert 'cannot run custom Lua' in app.status.get()

@@ -46,6 +46,8 @@ edits that preserve contracts may leave docs unchanged after this pass.
   Preserve later capabilities in `docs/design.md` without claiming them built.
 - Installed game content is read-only. Deploy and launch against a dedicated
   toolkit profile, keeping the user's normal saves and mods outside write scope.
+- Built-in god mode and editor operations must work without dynamic Lua
+  compilation on 42.20.4. Inline Lua availability is a separate capability.
 - Live game behavior requires captured game evidence. Report offline tests and
   real game verification separately. A timeout is not a passing scenario.
 - Keep tokens, local game files, saves, logs, and machine configuration out of Git.

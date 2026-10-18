@@ -433,11 +433,7 @@ class Toolkit:
         """Set and verify the loaded player's god mode through the authenticated debug bridge."""
         if type(enabled) is not bool:
             raise ValueError("enabled must be a boolean")
-        value = "true" if enabled else "false"
-        return self.lua_execute("local player = assert(getPlayer(), 'Player not loaded'); "
-                                f"player:setGodMod({value}); "
-                                f"assert(player:isGodMod() == {value}, 'God mode change did not apply'); "
-                                f"return 'God mode {'enabled' if enabled else 'disabled'}'")
+        return self._execute(f"PZT-OP/1\ngod_mode\n{str(enabled).lower()}", 30, operation=True)
 
     def debug_editors(self) -> dict:
         """List supported built-in debug editors without opening windows or writing files."""
@@ -449,14 +445,17 @@ class Toolkit:
         """Request one allowlisted built-in editor in the connected debug game."""
         if not isinstance(editor, str) or editor not in DEBUG_EDITORS:
             raise ValueError("Unknown editor; choose an id returned by debug_editors")
-        title, code = DEBUG_EDITORS[editor]
-        return self.lua_execute(code + f"; return 'Requested {title}; window visibility is not verified'")
+        return self._execute(f"PZT-OP/1\neditor_open\n{editor}", 30, operation=True)
 
-    def _execute(self, code: str, timeout: float, scenario: str | None = None) -> dict:
+    def _execute(self, code: str, timeout: float, scenario: str | None = None, *, operation: bool = False) -> dict:
         """Shared authenticated wire transport; only legacy scenarios persist reports."""
         status = self.bridge_status()
         if not status["ready"]:
             raise ValueError(f"Bridge is not ready ({status.get('reason', 'no fresh heartbeat')}): {status['next_step']}")
+        if operation and status.get("operations_available") is not True:
+            raise ValueError("Bridge needs an update for built-in commands. Close the test game, install the bridge, and relaunch")
+        if not operation and (status.get("lua_compiler") is False or status.get("lua_execution_available") is False):
+            raise ValueError("Lua compiler unavailable in this game build. Built-in god mode and editor commands remain available")
         lock = self._profile_path("Lua/pzt-run.lock")
         try:
             lock_file = lock.open("x", encoding="utf-8")
@@ -474,7 +473,8 @@ class Toolkit:
                 log_prefix = stream.read(min(4096, log_offset))
         report = {"id": identifier, "sha256": hashlib.sha256(code.encode("utf-8")).hexdigest(),
                   "status": "timed_out", "ok": False, "message": "No matching game response before deadline",
-                  "game_build": status.get("build"), "execution_contract": "synchronous Lua assertions"}
+                  "game_build": status.get("build"), "execution_contract":
+                  "predefined bridge operation" if operation else "synchronous Lua assertions"}
         if scenario is not None:
             report["scenario"] = scenario
         try:

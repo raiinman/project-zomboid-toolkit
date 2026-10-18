@@ -129,3 +129,17 @@ assertions need explicit correlated completion before counting as passed.
 Legacy mod validation still checks only the toolkit's `42/` structure, not full
 asset/dependency/Java/map or multiplayer compatibility. Never broaden that claim
 without separate acceptance fixtures.
+
+## Build 42.20.4 compatibility
+
+Connection readiness depends on local authenticated debug single-player state,
+not dynamic compilation. Predefined `PZT-OP/1` god-mode/editor commands use the
+existing bounded, authenticated, expiring, correlated transport. Names, frame
+length and values are strict allowlists, never executable source. Startup god
+mode also needs no compiler. `lua_execute` remains available only when the game
+provides its compiler; the GUI explains this separate capability.
+
+The official [42.20.4 hotfix notes](https://theindiestone.com/forums/topic/100509-42204-stable-42192-unstable-417821-legacy-hotfixes-released/)
+removed loadstring/loadstream and recommended predefined command methods.
+[42.21 release notes](https://projectzomboid.com/blog/news/2026/09/42-21-stable-released/)
+record later restoration. Runtime capability checks remain authoritative.

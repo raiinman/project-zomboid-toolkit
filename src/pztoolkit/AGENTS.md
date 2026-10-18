@@ -18,7 +18,9 @@ transport, and packaged Lua bridge assets.
 - Use `.txt` for in-game wire files, including JSON status and response payloads.
   The inspected Build 42.20 file-writer allowlist rejects `.json` filenames.
 - Check compiler capability at runtime; 42.20.4 removed dynamic compilation,
-  while 42.21 restored it. Report unavailable compilation as a readiness reason.
+  while 42.21 restored it. Keep authenticated predefined god-mode/editor
+  operations usable without a compiler. Report Lua availability separately
+  from connection readiness; never evaluate operation names or arguments.
 - Harness success covers synchronous assertions only. Deferred callback failures
   require a future asynchronous completion protocol. OnTick heartbeat can become
   stale while a world is paused; make that limitation explicit in diagnostics.

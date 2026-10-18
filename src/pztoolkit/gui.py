@@ -37,6 +37,7 @@ class Application:
         self.jobs = queue.Queue()
         self.actions = []
         self.connected = False
+        self.lua_execution_available = None
         self.lua_dirty = False
         self.trusted_code = None
         self._style()
@@ -188,7 +189,8 @@ class Application:
         row.grid(row=6, column=0, columnspan=2, sticky="w", pady=5)
         self.button(row, "Read game logs", lambda: self.dispatch("logs_read")).pack(side="left", padx=(0, 10))
         self.button(row, "Check connection", lambda: self.dispatch("bridge_status")).pack(side="left")
-        ttk.Label(self.lua_page, text="Lua is the game's scripting language. Commands run directly in your loaded test world and may change it. Review the code before trusting it. No command files are needed.", wraplength=800).pack(anchor="w", pady=(0, 10))
+        self.lua_help = tk.StringVar(value="Lua commands run directly in your loaded test world and may change it. Review the code before trusting it. No command files are needed.")
+        ttk.Label(self.lua_page, textvariable=self.lua_help, wraplength=800).pack(anchor="w", pady=(0, 10))
         self.editor = self.text_box(self.lua_page, height=7)
         self.editor.insert("1.0", "return 'Hello from the game'\n")
         self.editor.edit_modified(False)
@@ -196,7 +198,8 @@ class Application:
         self.editor.bind("<<Modified>>", self.editor_changed)
         self.trust_control = ttk.Checkbutton(self.lua_page, text="I reviewed this Lua and trust it to change my test world.", variable=self.trusted, command=self.confirm_trust)
         self.trust_control.pack(anchor="w", pady=10)
-        self.button(self.lua_page, "Run Lua command", self.run_lua, True).pack(anchor="w")
+        self.lua_button = self.button(self.lua_page, "Run Lua command", self.run_lua, True)
+        self.lua_button.pack(anchor="w")
 
     def draw_hero(self, event):
         factor = max(1, self.hero_source.width() // max(1, event.width))
@@ -211,7 +214,9 @@ class Application:
         def wrap(parent):
             for child in parent.winfo_children():
                 if isinstance(child, ttk.Label) and int(child.cget("wraplength") or 0):
-                    child.configure(wraplength=max(300, min(int(child.cget("wraplength")), event.width - 45)))
+                    if not hasattr(child, "_wrap_limit"):
+                        child._wrap_limit = int(child.cget("wraplength"))
+                    child.configure(wraplength=max(300, min(child._wrap_limit, event.width - 45)))
                 wrap(child)
         wrap(event.widget)
 
@@ -280,6 +285,9 @@ class Application:
         self.trusted_code = self.editor.get("1.0", "end-1c") if self.trusted.get() else None
 
     def run_lua(self):
+        if self.lua_execution_available is False:
+            self.status.set("This game build cannot run custom Lua commands. God mode and built-in editors still work from Game tools.")
+            return
         code = self.editor.get("1.0", "end-1c")
         if not self.trusted.get() or self.trusted_code != code:
             self.trusted.set(False)
@@ -352,6 +360,8 @@ class Application:
             tone, summary = "error", "The game reported a problem. " + str(result.get("message", "Open Details for the reason."))
         elif name in {"connect", "bridge_status"}:
             self.connected = result.get("ready") is True
+            self.lua_execution_available = result.get("lua_execution_available")
+            self.lua_help.set("This game build does not support custom Lua commands. God mode and built-in editors still work in the Built-in editors tab." if self.lua_execution_available is False else "Lua commands run directly in your loaded test world and may change it. Review and trust the code before sending it. No command files are needed.")
             if self.connected:
                 summary = "Connected to your game. " + ("God mode is on." if result.get("god_mode") is True else "God mode is off." if result.get("god_mode") is False else "God mode has not been reported.")
                 if result.get("debug") is True:
@@ -384,6 +394,7 @@ class Application:
             summary = "Lua completed. " + str(result.get("message", "Open Details for the returned result."))
         elif name == "logs_read":
             summary = "Game logs loaded in Details." if result.get("exists") else "No game log yet. Launch the test game first, then Read game logs."
+        self.lua_button.configure(state="disabled" if self.lua_execution_available is False else "normal")
         self.display(summary, error or ("\n".join(result["lines"]) if name == "logs_read" and not error else result), tone)
         if name == "logs_read" and not error and result.get("exists"):
             self.details_open.set(True)

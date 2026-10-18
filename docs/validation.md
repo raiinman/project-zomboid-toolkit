@@ -1,5 +1,19 @@
 # Validation record
 
+## v0.4.1 compatibility update
+
+The user-supplied 42.20.4 archive was inspected for unsafe paths/links, extracted
+into separate staging and moved into place only after executable validation.
+The previous game installation was retained as a separate backup. Normal saves,
+mods and the existing isolated profile were outside the game-directory swap.
+Runtime build and live operation acceptance are recorded after launch.
+
+The final local suite passed **187 tests**, including 29 Windows GUI tests.
+A fresh independent source review found no remaining required defects. Tests
+cover compiler-free predefined operations and strict frames/auth/expiry/replay,
+custom-Lua capability gating and GUI text-wrap recovery.
+
+
 ## v0.4.0 direct game toolbelt
 
 Checked October 17, 2026. Offline checks and real-game acceptance are separate.

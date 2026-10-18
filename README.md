@@ -101,6 +101,8 @@ The bridge runs in a loaded, unpaused local debug single-player world. It refuse
 multiplayer client and server contexts. Lua has game privileges and must terminate;
 a timeout cannot stop code already running and means the outcome is unknown.
 Only synchronous assertions contribute to a result. Use trusted commands.
+Build 42.20.4 supports predefined god-mode/editor commands but removes custom
+Lua compilation; the app reports that capability separately from connection.
 
 Inline commands reuse bounded authenticated request/response files inside the
 existing profile. They do not create scenario or per-command report files.

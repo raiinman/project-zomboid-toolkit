@@ -198,6 +198,8 @@ def test_json_escaping_and_status(bridge):
         "timestamp_ms": 1000000,
         "build": "42.20.0",
         "lua_compiler": True,
+        "lua_execution_available": True,
+        "operations_available": True,
         "debug": True,
         "single_player": True,
         "player_loaded": True,
@@ -208,12 +210,16 @@ def test_json_escaping_and_status(bridge):
 
 def test_missing_compiler_reports_unavailable_without_executing(bridge):
     bridge.globals().loadstring = None
-    assert request(bridge, "executed = true") is None
+    result = request(bridge, "executed = true")
+    assert result['ok'] is False
+    assert 'compiler unavailable' in result['message']
     assert bridge.globals().executed is None
     status = json.loads(bridge.globals().files["pzt-status.txt"])
-    assert status["ready"] is False
+    assert status["ready"] is True
     assert status["lua_compiler"] is False
-    assert status["reason"] == "Lua compiler unavailable"
+    assert status["lua_execution_available"] is False
+    assert status["operations_available"] is True
+    assert status["reason"] == "ready"
 
 
 def test_protocol_uses_allowed_text_extension_with_json_content(bridge):
@@ -323,8 +329,9 @@ def test_missing_compiler_does_not_block_startup_god_mode(bridge):
     state = bridge.globals()
     state.loadstring = None
     result = status(bridge)
-    assert result["ready"] is False
-    assert result["reason"] == "Lua compiler unavailable"
+    assert result["ready"] is True
+    assert result["lua_execution_available"] is False
+    assert result["reason"] == "ready"
     assert result["god_mode"] is True
 
 
@@ -340,3 +347,88 @@ def test_god_mode_status_observes_actual_state_and_rejects_lost_authorization(br
     state.debug_enabled = False
     assert status(bridge)["god_mode"] is False
     assert state.player.god_mode_calls == 1
+
+
+@pytest.mark.parametrize('enabled', [True, False])
+def test_predefined_god_mode_without_compiler_verifies_actual_state(bridge, enabled):
+    state = bridge.globals()
+    state.loadstring = None
+    result = request(bridge, f'PZT-OP/1\ngod_mode\n{str(enabled).lower()}')
+    assert result['ok'] is True
+    assert state.player.god_mode is enabled
+    assert ('enabled' if enabled else 'disabled') in result['message']
+    assert status(bridge)['god_mode'] is enabled
+    assert state.open_handles == state.closed_handles
+
+
+@pytest.mark.parametrize('failure', ['set_error', 'read_error', 'ignore_set'])
+def test_predefined_god_mode_api_failure_never_reports_success(bridge, failure):
+    state = bridge.globals()
+    state.tick()
+    state.player[failure] = True if failure == 'ignore_set' else 'API failed'
+    state.now += 200
+    result = request(bridge, 'PZT-OP/1\ngod_mode\nfalse')
+    assert result['ok'] is False
+    assert 'operation error' in result['message']
+
+
+@pytest.mark.parametrize(('editor', 'callback'), [
+    ('debug', 'debug'), ('vehicle', 'vehicle'), ('attachment', 'attachment'),
+    ('animation', 'animation'), ('world_map', 'world_map'),
+])
+def test_predefined_editors_use_only_shipped_allowlist_without_compiler(bridge, editor, callback):
+    bridge.execute('''
+        loadstring = nil
+        function require(name) required = name end
+        ISDebugMenu = { OnOpenPanel = function() opened = 'debug' end }
+        function showVehicleEditor(arg) assert(arg == nil); opened = 'vehicle' end
+        function showAttachmentEditor() opened = 'attachment' end
+        function showAnimationViewer() opened = 'animation' end
+        function showWorldMapEditor(arg) assert(arg == nil); opened = 'world_map' end
+    ''')
+    result = request(bridge, f'PZT-OP/1\neditor_open\n{editor}')
+    assert result['ok'] is True
+    assert bridge.globals().opened == callback
+    assert 'visibility is not verified' in result['message']
+    if editor == 'debug':
+        assert bridge.globals().required == 'DebugUIs/DebugMenu/ISDebugMenu'
+
+
+@pytest.mark.parametrize('payload', [
+    'god_mode\ntrue\nexecuted = true', 'god_mode\n1', 'god_mode',
+    'editor_open\nvehicle; executed = true', 'editor_open\nunknown',
+    'unknown\ntrue',
+])
+def test_invalid_operation_frames_cannot_execute_source(bridge, payload):
+    bridge.globals().loadstring = None
+    result = request(bridge, 'PZT-OP/1\n' + payload)
+    assert result['ok'] is False
+    assert bridge.globals().executed is None
+
+
+@pytest.mark.parametrize(('guard', 'value'), [
+    ('debug_enabled', False), ('multiplayer', True), ('server', True), ('player_present', False),
+])
+def test_predefined_commands_share_local_debug_guards(bridge, guard, value):
+    state = bridge.globals()
+    state[guard] = value
+    assert request(bridge, 'PZT-OP/1\ngod_mode\ntrue') is None
+    assert state.player.god_mode_calls == 0
+
+
+def test_predefined_command_authentication_expiry_and_replay(bridge):
+    state = bridge.globals()
+    assert request(bridge, 'PZT-OP/1\ngod_mode\nfalse', token='wrong') is None
+    assert request(bridge, 'PZT-OP/1\ngod_mode\nfalse', expiry=999999) is None
+    state.now += 200
+    result = request(bridge, 'PZT-OP/1\ngod_mode\nfalse', expiry=999999)
+    assert result['ok'] is False
+    state.now += 200
+    request(bridge, 'PZT-OP/1\ngod_mode\nfalse')
+    assert state.player.god_mode is True
+
+
+def test_predefined_missing_editor_api_reports_failure(bridge):
+    result = request(bridge, 'PZT-OP/1\neditor_open\nvehicle')
+    assert result['ok'] is False
+    assert 'Vehicle editor unavailable' in result['message']
