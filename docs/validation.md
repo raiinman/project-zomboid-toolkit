@@ -57,12 +57,20 @@ stdio MCP initialize/list/call probe: the exact 11-tool registry, `doctor`,
 `ready=true`, `debug=true`, `god_mode=true` and built-in operations available.
 Custom Lua remains unavailable on this build. Editor IDs were discovered without
 opening editors or changing the game. The probe shut down its own server process.
-This chat subsequently discovered the native MCP namespace, but direct `doctor`
-and `bridge_status` calls exposed cached settings for an old development profile
-and a stale 42.20.0 heartbeat. The verified installed-app connection is now pinned
-explicitly with `--config` in MCP registration. Only the identified stale stdio
-process was stopped. The host currently reports `Transport closed` and requires
-its app-side server Restart control; native chat readiness remains pending.
+Native chat reconnection is now verified. MCP registration pins the verified
+installed-app connection explicitly with `--config`, preventing the old
+development profile from being selected. After the user approved a Codex restart,
+a hidden helper restarted only the identified app and its app-server. Its receipt
+confirms the same game process stayed running and saved settings were preserved.
+No mouse or keyboard input was used.
+
+Direct `mcp__project_zomboid` calls in this chat then passed `doctor`,
+`bridge_status` and `debug_editors`. They confirm the installed isolated profile,
+a fresh **42.20.4 b0bbce05d5** heartbeat, `ready=true`, `debug=true`,
+`single_player=true`, `player_loaded=true`, `god_mode=true` and
+`operations_available=true`. All five supported editor IDs are discoverable;
+no editor was opened. Custom Lua remains unavailable. This is actual native
+chat-tool evidence, distinct from the earlier standalone protocol probe.
 After the probe, the installed CLI still exists with SHA-256
 `3F0EDBC0E9658629AF70610C337C94C22774C1480B33DB68517778B198987E2C`.
 There are zero new Defender 1116/1117 events after scan completion, and protection
