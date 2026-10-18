@@ -29,7 +29,7 @@ Documentation and DOX may proceed independently of executable implementation.
 - [x] Compiler-unavailable builds and paused/stale heartbeats produce useful
   readiness diagnostics; both multiplayer client and server contexts are refused.
 - [ ] Real game acceptance passes with a recorded game version.
-- [ ] README, package install, relevant tests, and publishing checks pass.
+- [x] README, package install, relevant tests, and publishing checks pass.
 
 Keep unchecked game acceptance visible when the executable cannot be launched or
 the bridge cannot be exercised. Publishing an initial repository does not imply

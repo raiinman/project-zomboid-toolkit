@@ -33,6 +33,9 @@ running infinite loop, certify deferred callbacks, or suppress every game-side
 debugger/error presentation. A timeout is inconclusive. Console excerpts are
 bounded best-effort evidence with rollover/capture-limit flags.
 
-The GitHub workflow checks the frozen environment and offline suite on Windows
-and Linux, Python 3.11 and 3.12. Its execution result must be checked separately
-after push; a workflow definition alone is not a passing remote run.
+The [GitHub workflow run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39084742653)
+passed all four jobs on Windows and Linux with Python 3.11 and 3.12 for
+implementation commit `c6d5aea`. Each job verified the frozen lock, installed
+dependencies, checked dependency compatibility, compiled Python sources and ran
+the offline suite. This verifies the offline implementation across that matrix;
+it does not replace in-world game acceptance.

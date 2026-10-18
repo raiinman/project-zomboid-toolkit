@@ -9,7 +9,7 @@ entries**. Every entry is accounted for in [wiki-coverage.csv](wiki-coverage.csv
 | Depth | Hub URL entries |
 | --- | ---: |
 | Substantive article/overview reviewed | 139 |
-| Index reviewed; descendants not exhaustively audited | 13 |
+| Index/overview inspected; descendants not exhaustively audited | 13 |
 | Selected reference sections reviewed | 8 |
 | Short/incomplete stub reviewed | 3 |
 | Explicitly outside technical English review scope | 10 |
@@ -24,6 +24,9 @@ on PZWiki, every category descendant, API member, image, video, Discord discussi
 or external repository has been read or tested**. Large reference datasets have
 explicit depth labels. Missing page-version values mean not observed, not current.
 Article edit dates and version badges are separate evidence.
+Some version badges are automatically updated and do not prove compatibility.
+For category entries, the ledger's `index_reviewed` status means introduction and
+navigation inspection; it does not claim that every category member was read.
 
 Browser reads initially worked where the search fetcher was blocked. Ordinary
 public HTML requests subsequently provided current article bodies, with requests
