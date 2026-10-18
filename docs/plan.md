@@ -22,13 +22,14 @@ measured test and runtime evidence.
 
 - [x] Shared registry and strict validation architecture already exists.
 - [x] Older scaffold/deploy operations remain available for existing scripts.
-- [ ] Final 11-tool public surface passes the complete offline suite.
-- [ ] Direct Lua works without scenario or per-command report files.
-- [ ] The final GUI has no mod manager, folder wizard or scenario-file workflow.
-- [ ] Saved settings, existing isolated profile and startup debug/god mode survive upgrade.
-- [ ] Final executable GUI, CLI and MCP checks pass for v0.4.0.
+- [x] Final 11-tool public surface passes the complete offline suite.
+- [x] Offline inline transport creates no scenario or per-command report files.
+- [x] The final GUI has no mod manager, folder wizard or scenario-file workflow.
+- [x] Saved settings, token and existing isolated profile survive upgrade.
+- [ ] Startup debug/god mode are confirmed in a loaded native world.
+- [x] Final executable GUI, CLI and MCP checks pass for v0.4.0.
 - [ ] Final rendered default/minimum windows, help, errors and advanced controls are inspected.
-- [ ] Installed app and Start menu entry are verified on the actual PC.
+- [x] Installed app and Start menu entry are verified on the actual PC.
 - [ ] Actual game acceptance passes with captured build and connection evidence.
 
 Unchecked items are intentional evidence boundaries, not claims of failure.

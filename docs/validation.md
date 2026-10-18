@@ -24,8 +24,34 @@ actual MCP initialize/discovery/schema/invocation and invalid-input checks;
 windowed PE header, mapped fixture Tk window, both pages, Lua controls,
 minimum-size bounds, font and assets. This is an automated fixture smoke check,
 not a new visual inspection of the installed app.
-Actual-PC installation results follow as each completes.
+Remote Desktop Commander downloaded the published v0.4.0 ZIP onto APeX-2,
+verified ZIP and executable SHA-256 digests, installed it per user and updated
+the existing Start-menu target. Saved configuration and bridge-token hashes
+are unchanged. The helper was updated inside the already-owned profile, with
+startup god-mode and actual debug-status code present. The original DEBUG
+shortcut still targets the game with `-debug`.
+
+The installed `pz.exe` exposes all 11 default tools. A real installed stdio MCP
+initialize/list/call exchange passed, including `debug_editors` invocation.
+Codex's enabled global `project-zomboid` server points to that installed binary
+with `serve`; a client refresh may be needed to discover it in existing chats.
+Installed `bridge_status` correctly reports `ready=false` with no world loaded.
+The installed GUI was not opened or visually inspected after the desktop stop.
+
+Release assets match these SHA-256 values:
+
+| Asset | SHA-256 |
+| --- | --- |
+| pz-windows.zip | `A2490C600CA715971DCC53F9AE0BC9A7F92CDC36DF8C418E38F573904626A2B6` |
+| PZToolkit.exe | `8459C7557311615AB507C0AA443CF72C0B0FC19942FD34DB05BDECE35555EF7C` |
+| pz.exe | `DC36119617F84DD6184784FD6F91E68B7F51DF8A095355FF55A0F2C548DF8A46` |
 No source or fixture success establishes a connected world.
+
+The [v0.4.0 CI run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39096279934)
+passed all four Windows/Linux Python 3.11/3.12 jobs for implementation commit
+`6fc5ba41fbc0523e72a813ac55223318c001d275`. Windows 3.11 rebuilt and verified
+both executables, including actual MCP protocol and native fixture GUI checks.
+The released assets were also independently verified on the actual PC.
 
 ## Acceptance still pending
 
