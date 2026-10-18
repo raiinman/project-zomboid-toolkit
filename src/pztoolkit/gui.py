@@ -13,12 +13,23 @@ from tkinter import filedialog, messagebox, ttk
 from .core import Toolkit, atomic_text, confined, linked
 
 ASSETS = Path(__file__).parent / "assets/gui"
-INK = "#0b1113"
-PANEL = "#14201f"
-EDGE = "#384c44"
-TEXT = "#e4e9d9"
-MUTED = "#a7baae"
-ACID = "#c2dc7c"
+INK = "#141416"
+PANEL = "#1e1e22"
+EDGE = "#414047"
+TEXT = "#f1edef"
+MUTED = "#bcb5bc"
+ACCENT = "#ef8b82"
+
+GUIDE = (
+    ("Setup", "Save setup", "save_setup", "Choose your folders", "Browse to your game installation, choose a mod workspace and a separate test profile, then save setup."),
+    ("Setup", "Prepare test profile", "profile_prepare", "Prepare the isolated profile", "Install the toolkit bridge into the separate test profile. Your normal saves and mods stay outside it."),
+    ("Mods", "Create mod", "mod_create", "Create a development mod", "Enter a new mod ID, then create it. A matching Lua smoke scenario is generated for you."),
+    ("Mods", "Check selected", "mod_check", "Check your mod", "Select a mod in the list, then check its folder layout and metadata."),
+    ("Mods", "Deploy to test profile", "mod_deploy", "Deploy your changes", "Copy the checked mod into the isolated profile. Previous deployments are backed up."),
+    ("In-game tests", "Launch test game", "game_launch", "Open the test game", "Launch the isolated game. Enable PZ Toolkit Bridge and your mod, load a disposable single-player world and unpause it."),
+    ("In-game tests", "Check bridge", "bridge_status", "Wait for the game bridge", "Keep the test world loaded and unpaused, then check that the bridge is ready."),
+    ("In-game tests", "Run saved scenario", "harness_run", "Run your first test", "Review the scenario, save any edits, select the trust checkbox and run. Results appear in the activity dock."),
+)
 
 
 def default_config() -> Path:
@@ -37,40 +48,86 @@ class Application:
         self.path_entries = []
         self.path_traces = []
         self.loaded_scenario = None
+        self.guide_index = 0
+        self.guide_complete = False
+        self.guide_enabled = tk.BooleanVar(master=root, value=True)
+        self.guide_arrow = None
+        self.guide_target = None
+        self.guide_original_style = None
         root.title("Project Zomboid Toolkit")
-        root.geometry("1180x920")
-        root.minsize(1000, 800)
+        root.geometry("1280x960")
+        root.minsize(1100, 860)
         root.configure(background=INK)
         root.protocol("WM_DELETE_WINDOW", self.close)
         self._style()
-        shell = ttk.Frame(root, padding=20)
-        shell.pack(fill="both", expand=True)
-        self._header(shell)
+        outer = ttk.Frame(root)
+        outer.pack(fill="both", expand=True)
+        sidebar = ttk.Frame(outer, width=238, padding=(18, 18), style="Rail.TFrame")
+        sidebar.pack(side="left", fill="y")
+        sidebar.pack_propagate(False)
+        self._header(sidebar)
+        shell = ttk.Frame(outer, padding=(24, 20))
+        shell.pack(side="left", fill="both", expand=True)
+        self.page_title = tk.StringVar(value="Setup")
+        self.page_caption = tk.StringVar(value="Choose your development environment.")
+        ttk.Label(shell, textvariable=self.page_title, style="Page.TLabel").pack(anchor="w")
+        ttk.Label(shell, textvariable=self.page_caption, style="Subtitle.TLabel").pack(anchor="w", pady=(4, 16))
+        self.guide_bar = ttk.Frame(shell, padding=12, style="Guide.TFrame")
+        self.guide_bar.pack(fill="x", pady=(0, 10))
+        self.guide_title = tk.StringVar()
+        self.guide_copy = tk.StringVar()
+        guide_top = ttk.Frame(self.guide_bar, style="Guide.TFrame")
+        guide_top.pack(fill="x")
+        ttk.Label(guide_top, textvariable=self.guide_title, style="GuideTitle.TLabel").pack(side="left")
+        self.guide_next = ttk.Button(guide_top, text="Next", command=lambda: self.show_guide(self.guide_index + 1))
+        self.guide_next.pack(side="right")
+        self.guide_previous = ttk.Button(guide_top, text="Previous", command=lambda: self.show_guide(self.guide_index - 1))
+        self.guide_previous.pack(side="right", padx=6)
+        self.guide_show = ttk.Button(guide_top, text="Show me", command=lambda: self.show_guide(self.guide_index))
+        self.guide_show.pack(side="right", padx=(0, 6))
+        self.guide_description = ttk.Label(self.guide_bar, textvariable=self.guide_copy, wraplength=800, style="GuideCopy.TLabel")
+        self.guide_description.pack(fill="x", pady=(8, 0))
         self.status = tk.StringVar(value="Start with Setup: choose your game and development folders.")
         self.status_label = ttk.Label(shell, textvariable=self.status, style="Status.TLabel", wraplength=1090,
                                       padding=12)
-        self.status_label.pack(fill="x", pady=(12, 14))
+        self.status_label.pack(fill="x", pady=(0, 12))
         self.status_trace = self.status.trace_add("write", lambda *_: self.status_label.configure(style="Status.TLabel"))
-        shell.bind("<Configure>", lambda event: self.status_label.configure(wraplength=max(600, event.width - 26)))
-        self.tabs = ttk.Notebook(shell)
-        self.tabs.pack(fill="both", expand=True)
+        shell.bind("<Configure>", self.resize_content)
+        self.panes = ttk.Panedwindow(shell, orient="vertical")
+        self.panes.pack(fill="both", expand=True)
+        self.tabs = ttk.Notebook(self.panes, style="Workspace.TNotebook")
+        self.panes.add(self.tabs, weight=4)
         self.setup = ttk.Frame(self.tabs, padding=18)
         self.mods = ttk.Frame(self.tabs, padding=18)
         self.tests = ttk.Frame(self.tabs, padding=18)
         for page, title in ((self.setup, "Setup"), (self.mods, "Mods"), (self.tests, "In-game tests")):
             self.tabs.add(page, text=title)
+            page.bind("<Configure>", self.resize_page)
+        self.navigation = {}
+        for title, page in (("Mods", self.mods), ("In-game tests", self.tests), ("Setup", self.setup)):
+            button = ttk.Button(sidebar, text=title, command=lambda page=page: self.tabs.select(page), style="Nav.TButton")
+            button.pack(fill="x", pady=4)
+            self.navigation[title] = button
+        ttk.Checkbutton(sidebar, text="Show guide", variable=self.guide_enabled, command=self.toggle_guide,
+                        style="Rail.TCheckbutton").pack(anchor="w", pady=(22, 0))
+        ttk.Label(sidebar, text="Local mod development\nCLI and MCP included", style="RailCopy.TLabel",
+                  justify="left").pack(side="bottom", anchor="w", pady=10)
+        self.tabs.enable_traversal()
+        self.tabs.bind("<<NotebookTabChanged>>", self.page_changed)
         self._setup_page()
         self._mods_page()
         self._tests_page()
-        footer = ttk.Frame(shell)
-        footer.pack(fill="x", pady=(12, 6))
+        activity = ttk.Frame(self.panes, padding=(0, 12, 0, 0))
+        self.panes.add(activity, weight=1)
+        footer = ttk.Frame(activity)
+        footer.pack(fill="x", pady=(0, 8))
         ttk.Label(footer, text="Activity & results", style="Heading.TLabel").pack(side="left")
         self.progress = ttk.Progressbar(footer, mode="indeterminate", length=140)
-        self.progress.pack(side="right")
-        self.output = self.text_box(shell, height=7, readonly=True)
+        self.output = self.text_box(activity, height=6, readonly=True)
         self.output.insert("1.0", "Tool results and game logs appear here. Your normal saves and mods stay outside the test profile.")
         self.output.configure(state="disabled")
         self.load_config(self.config)
+        self.show_guide(0)
         self.poll_handle = root.after(80, self.poll)
 
     def _style(self):
@@ -86,68 +143,157 @@ class Application:
         style = ttk.Style(self.root)
         style.theme_use("clam")
         style.configure(".", font=("Segoe UI", 10), background=INK, foreground=TEXT,
-                        bordercolor=EDGE, lightcolor=EDGE, darkcolor=INK, focuscolor=ACID)
+                        bordercolor=EDGE, lightcolor=EDGE, darkcolor=INK, focuscolor=ACCENT)
+        style.configure("Page.TLabel", font=(self.display_family, 24))
+        style.configure("Rail.TFrame", background=PANEL)
+        style.configure("RailTitle.TLabel", background=PANEL, font=(self.display_family, 17))
+        style.configure("RailCopy.TLabel", background=PANEL, foreground=MUTED)
+        style.configure("Rail.TCheckbutton", background=PANEL)
+        style.configure("Nav.TButton", anchor="w", background=PANEL, foreground=MUTED,
+                        padding=(14, 13), borderwidth=0, relief="flat")
+        style.map("Nav.TButton", background=[("active", "#303034")], foreground=[("active", TEXT)])
+        style.configure("Selected.Nav.TButton", background="#462c32", foreground=TEXT)
+        style.map("Selected.Nav.TButton", background=[("active", "#56353b")], foreground=[("active", TEXT)])
+        style.configure("Guide.TFrame", background="#28252a")
+        style.configure("GuideTitle.TLabel", background="#28252a", font=("Segoe UI", 10, "bold"))
+        style.configure("GuideCopy.TLabel", background="#28252a", foreground=MUTED)
         style.configure("Subtitle.TLabel", foreground=MUTED)
         style.configure("Heading.TLabel", font=(self.display_family, 12))
-        style.configure("Status.TLabel", background="#1a2d25", foreground=ACID)
+        style.configure("Status.TLabel", background="#242328", foreground=TEXT)
         style.configure("Error.Status.TLabel", background="#321e20", foreground="#ffb0a5")
-        style.configure("Warning.Status.TLabel", background="#2c2a1b", foreground="#edda98")
-        style.configure("TButton", padding=(14, 9), background="#21322d", foreground=TEXT,
-                        bordercolor="#496050", focuscolor=ACID)
-        style.map("TButton", background=[("disabled", "#17211f"), ("pressed", "#415642"), ("active", "#304b3a")],
-                  foreground=[("disabled", "#7d8e82")])
-        style.configure("Accent.TButton", background=ACID, foreground=INK, bordercolor=ACID)
-        style.map("Accent.TButton", background=[("disabled", "#26352a"), ("pressed", "#96b75b"), ("active", "#d4ed95")],
-                  foreground=[("disabled", "#8e9c87"), ("active", INK)])
+        style.configure("Warning.Status.TLabel", background="#342b22", foreground="#f3cf9e")
+        style.configure("TButton", padding=(14, 9), background="#303035", foreground=TEXT,
+                        bordercolor="#55515a", focuscolor=ACCENT)
+        style.map("TButton", background=[("disabled", "#252428"), ("pressed", "#4b454d"), ("active", "#414047")],
+                  foreground=[("disabled", "#a29aa3")])
+        style.configure("Accent.TButton", background=ACCENT, foreground=INK, bordercolor=ACCENT)
+        style.map("Accent.TButton", background=[("disabled", "#3b3035"), ("pressed", "#da746e"), ("active", "#ffa69b")],
+                  foreground=[("disabled", "#b6a6ad"), ("active", INK)])
+        style.configure("Guide.TButton", background="#502b32", foreground=TEXT, bordercolor=ACCENT, padding=(24, 9))
+        style.map("Guide.TButton", background=[("disabled", "#34282d"), ("active", "#663640")],
+                  foreground=[("disabled", "#b6a6ad"), ("active", TEXT)])
         style.configure("TNotebook", background=INK, bordercolor=EDGE, tabmargins=(0, 0, 0, 0))
-        style.configure("TNotebook.Tab", padding=(23, 11), background="#182522", foreground=MUTED)
-        style.map("TNotebook.Tab", background=[("selected", "#2b4030"), ("active", "#21382b")],
-                  foreground=[("selected", ACID), ("active", TEXT)])
-        style.configure("Treeview", rowheight=34, background="#101b1b", fieldbackground="#101b1b",
+        style.layout("Workspace.TNotebook.Tab", [])
+        style.configure("Workspace.TNotebook", borderwidth=0)
+        style.configure("Treeview", rowheight=36, background=PANEL, fieldbackground=PANEL,
                         foreground=TEXT, bordercolor=EDGE)
-        style.map("Treeview", background=[("selected", "#3b553b")], foreground=[("selected", "#eef6df")])
-        style.configure("Treeview.Heading", padding=9, background="#23362d", foreground=ACID,
+        style.map("Treeview", background=[("selected", "#57333b")], foreground=[("selected", TEXT)])
+        style.configure("Treeview.Heading", padding=9, background="#2b292e", foreground=TEXT,
                         font=(self.display_family, 10), relief="flat")
-        style.map("Treeview.Heading", background=[("active", "#304535")])
+        style.map("Treeview.Heading", background=[("active", "#39353c")])
         for control in ("TEntry", "TSpinbox", "TCombobox"):
-            style.configure(control, fieldbackground="#101b1b", foreground=TEXT, padding=6,
-                            insertcolor=ACID, selectbackground="#3b553b", selectforeground=TEXT,
-                            arrowcolor=ACID, bordercolor=EDGE)
-            style.map(control, fieldbackground=[("disabled", "#15201e"), ("readonly", "#101b1b")],
-                      foreground=[("disabled", "#819185"), ("readonly", TEXT)],
-                      bordercolor=[("focus", ACID)])
-        style.map("TCheckbutton", background=[("active", "#1a2b23")], indicatorbackground=[("selected", ACID)])
-        style.configure("TScrollbar", background="#2c4535", troughcolor=INK, arrowcolor=ACID, bordercolor=EDGE)
-        style.configure("Horizontal.TProgressbar", background=ACID, troughcolor="#14201b", bordercolor=EDGE)
-        self.root.option_add("*TCombobox*Listbox.background", "#101b1b")
+            style.configure(control, fieldbackground="#1b1b1f", foreground=TEXT, padding=6,
+                            insertcolor=ACCENT, selectbackground="#57333b", selectforeground=TEXT,
+                            arrowcolor=TEXT, bordercolor=EDGE)
+            style.map(control, fieldbackground=[("disabled", "#242328"), ("readonly", "#1b1b1f")],
+                      foreground=[("disabled", "#a29aa3"), ("readonly", TEXT)],
+                      bordercolor=[("focus", ACCENT)])
+        style.map("TCheckbutton", background=[("active", "#2a272c")], indicatorbackground=[("selected", ACCENT)])
+        style.configure("TScrollbar", background="#48414b", troughcolor=INK, arrowcolor=TEXT, bordercolor=EDGE)
+        style.configure("Horizontal.TProgressbar", background=ACCENT, troughcolor=PANEL, bordercolor=EDGE)
+        self.root.option_add("*TCombobox*Listbox.background", "#1b1b1f")
         self.root.option_add("*TCombobox*Listbox.foreground", TEXT)
-        self.root.option_add("*TCombobox*Listbox.selectBackground", "#3b553b")
+        self.root.option_add("*TCombobox*Listbox.selectBackground", "#57333b")
         self.root.option_add("*TCombobox*Listbox.selectForeground", TEXT)
 
     def _header(self, parent):
-        self.header = tk.Canvas(parent, height=138, background=INK, highlightthickness=0)
+        self.header = tk.Canvas(parent, height=86, background=PANEL, highlightthickness=0)
         self.header.pack(fill="x")
         original_logo = tk.PhotoImage(master=self.root, data=(ASSETS / "dead-signal-distressed.png").read_bytes(), format="png")
-        self.header_logo = original_logo.subsample(max(1, (original_logo.width() + 349) // 350))
-        original_art = tk.PhotoImage(master=self.root, data=(ASSETS / "containment-header.png").read_bytes(), format="png")
-        self.header_art = original_art.subsample(2)
+        self.header_logo = original_logo.subsample(max(1, (original_logo.width() + 199) // 200))
         self.icon = tk.PhotoImage(master=self.root, data=(ASSETS / "studio-icon.png").read_bytes(), format="png")
         self.root.iconphoto(True, self.icon)
         self.header.bind("<Configure>", self.draw_header)
+        ttk.Label(parent, text="Project Zomboid\nToolkit", style="RailTitle.TLabel", justify="left").pack(anchor="w", pady=(8, 28))
 
     def draw_header(self, event):
         canvas = self.header
         canvas.delete("all")
-        canvas.create_image(event.width, 66, image=self.header_art, anchor="e")
-        canvas.create_image(0, 0, image=self.header_logo, anchor="nw")
-        canvas.create_text(374, 44, text="PROJECT ZOMBOID", anchor="w", fill=TEXT,
-                           font=(self.display_family, 25))
-        canvas.create_text(376, 78, text="Mod development toolkit", anchor="w", fill=ACID,
-                           font=("Segoe UI", 12))
-        canvas.create_text(376, 106, text="Isolated profiles. Mods. In-game tests.", anchor="w", fill=MUTED,
-                           font=("Segoe UI", 10))
-        canvas.create_line(0, 136, event.width, 136, fill=EDGE)
-        canvas.create_line(0, 136, 338, 136, fill="#b74c43")
+        canvas.create_image(event.width / 2, 40, image=self.header_logo, anchor="center")
+
+    def resize_content(self, event):
+        self.status_label.configure(wraplength=max(400, event.width - 30))
+        self.guide_description.configure(wraplength=max(360, event.width - 60))
+
+    @staticmethod
+    def resize_page(event):
+        def wrap(parent):
+            for widget in parent.winfo_children():
+                if isinstance(widget, ttk.Label) and int(widget.cget("wraplength") or 0):
+                    widget.configure(wraplength=max(300, event.width - 45))
+                wrap(widget)
+        wrap(event.widget)
+
+    def page_changed(self, event=None):
+        selected = self.tabs.select()
+        if not selected:
+            return
+        title = self.tabs.tab(selected, "text")
+        self.page_title.set(title)
+        self.page_caption.set({"Setup": "Choose your development environment.",
+                               "Mods": "Create, check and deploy your workspace mods.",
+                               "In-game tests": "Run saved Lua scenarios and inspect the game evidence."}[title])
+        for name, button in self.navigation.items():
+            button.configure(style="Selected.Nav.TButton" if name == title else "Nav.TButton")
+        self.point_guide()
+
+    def clear_guide_arrow(self):
+        if self.guide_arrow is not None:
+            self.guide_arrow.destroy()
+            self.guide_arrow = None
+        if self.guide_target is not None:
+            self.guide_target.configure(style=self.guide_original_style)
+            self.guide_target = None
+
+    def point_guide(self):
+        self.clear_guide_arrow()
+        if not self.guide_enabled.get() or self.busy or self.guide_complete:
+            return
+        page, label, _, _, _ = GUIDE[self.guide_index]
+        if self.tabs.tab(self.tabs.select(), "text") != page:
+            return
+        target = next((button for button in self.actions if button.cget("text") == label), None)
+        if target is None:
+            return
+        self.guide_target = target
+        self.guide_original_style = target.cget("style")
+        target.configure(style="Guide.TButton")
+        self.guide_arrow = tk.Canvas(target, width=15, height=16, highlightthickness=0, background="#502b32")
+        self.guide_arrow.create_line(1, 8, 13, 8, arrow="last", fill=ACCENT, width=2)
+        self.guide_arrow.place(x=4, rely=0.5, anchor="w")
+        self.guide_arrow.bind("<Button-1>", lambda event: target.invoke())
+
+    def show_guide(self, index):
+        if self.busy:
+            return
+        self.guide_index = max(0, min(len(GUIDE) - 1, index))
+        self.guide_complete = False
+        page, _, _, title, description = GUIDE[self.guide_index]
+        self.guide_title.set(f"{self.guide_index + 1} of {len(GUIDE)}: {title}")
+        self.guide_copy.set(description)
+        self.guide_previous.configure(state="disabled" if self.guide_index == 0 else "normal")
+        self.guide_next.configure(state="disabled" if self.guide_index == len(GUIDE) - 1 else "normal")
+        if self.guide_enabled.get():
+            self.tabs.select({"Setup": self.setup, "Mods": self.mods, "In-game tests": self.tests}[page])
+        self.point_guide()
+
+    def toggle_guide(self):
+        if self.guide_enabled.get():
+            self.guide_bar.pack(fill="x", pady=(0, 10), before=self.status_label)
+            self.show_guide(self.guide_index)
+        else:
+            self.guide_bar.pack_forget()
+            self.clear_guide_arrow()
+
+    def advance_guide(self, action):
+        if not self.guide_enabled.get() or GUIDE[self.guide_index][2] != action:
+            return
+        if self.guide_index < len(GUIDE) - 1:
+            self.show_guide(self.guide_index + 1)
+        else:
+            self.guide_complete = True
+            self.clear_guide_arrow()
+            self.guide_copy.set("The game returned a passing result. Inspect the report below, edit your mod and scenario, then deploy and test again.")
 
     def button(self, parent, label, command, primary=False):
         button = ttk.Button(parent, text=label, command=command,
@@ -161,8 +307,8 @@ class Application:
         frame = ttk.Frame(parent)
         frame.pack(fill="both", expand=True)
         text = tk.Text(frame, height=height, wrap="word", font=("Consolas", 10),
-                       background="#0e1818", foreground=TEXT, insertbackground=ACID,
-                       selectbackground="#3b553b", selectforeground=TEXT, highlightcolor=ACID,
+                       background="#1b1b1f", foreground=TEXT, insertbackground=ACCENT,
+                       selectbackground="#57333b", selectforeground=TEXT, highlightcolor=ACCENT,
                        highlightbackground=EDGE, highlightthickness=1, relief="flat", borderwidth=0,
                        padx=10, pady=10, undo=not readonly)
         scroll = ttk.Scrollbar(frame, command=text.yview)
@@ -218,14 +364,16 @@ class Application:
         self.mod_list.heading("path", text="Workspace path", anchor="w")
         self.mod_list.column("#0", width=240)
         self.mod_list.column("path", width=440)
-        self.mod_list.pack(fill="both", expand=True)
-        row = ttk.Frame(self.mods)
-        row.pack(fill="x", pady=(12, 0))
+        footer = ttk.Frame(self.mods)
+        footer.pack(side="bottom", fill="x", pady=(12, 0))
+        row = ttk.Frame(footer)
+        row.pack(fill="x")
         self.button(row, "Check selected", lambda: self.selected_mod("mod_check"))
         self.button(row, "Deploy to test profile", lambda: self.selected_mod("mod_deploy"), True)
         self.button(row, "Open mod folder", self.open_mod)
-        ttk.Label(self.mods, text="Deployment keeps a backup of the previous copy. Reload the test world after changes.",
+        ttk.Label(footer, text="Deployment keeps a backup of the previous copy. Reload the test world after changes.",
                   wraplength=900).pack(anchor="w", pady=(10, 0))
+        self.mod_list.pack(fill="both", expand=True)
 
     def _tests_page(self):
         row = ttk.Frame(self.tests)
@@ -313,6 +461,7 @@ class Application:
             atomic_text(self.config, json.dumps(data, indent=2))
             self.load_config(self.config)
             self.status.set("Setup saved. Prepare the test profile before deploying or launching.")
+            self.advance_guide("save_setup")
         except (OSError, ValueError) as exc:
             self.display("Setup was not saved.", str(exc), "error")
         finally:
@@ -490,6 +639,10 @@ class Application:
             entry.configure(state="disabled")
         self.scenarios.configure(state="disabled")
         self.editor.configure(state="disabled")
+        self.clear_guide_arrow()
+        for button in (self.guide_next, self.guide_previous, self.guide_show):
+            button.configure(state="disabled")
+        self.progress.pack(side="right")
         self.progress.start(15)
         self.status.set("Running scenario in the game. Waiting for a matching response…" if name == "harness_run" else
                         f"Working: {name.replace('_', ' ')}…")
@@ -515,12 +668,16 @@ class Application:
         else:
             self.busy = False
             self.progress.stop()
+            self.progress.pack_forget()
             for button in self.actions:
                 button.configure(state="normal")
             for entry in self.path_entries:
                 entry.configure(state="normal")
             self.scenarios.configure(state="readonly")
             self.editor.configure(state="normal")
+            self.guide_show.configure(state="normal")
+            self.guide_previous.configure(state="disabled" if self.guide_index == 0 else "normal")
+            self.guide_next.configure(state="disabled" if self.guide_index == len(GUIDE) - 1 else "normal")
             self.last_result = {"error": error} if error else result
             summary = f"Completed: {name.replace('_', ' ')}."
             if error:
@@ -545,18 +702,22 @@ class Application:
                     callback(result)
                 except (OSError, ValueError, tk.TclError) as exc:
                     self.display("Action completed, but the workspace view could not refresh.", str(exc), "warning")
+            if not error and result.get("ok") is not False and (name != "bridge_status" or result.get("ready")):
+                self.advance_guide(name)
+            self.point_guide()
 
     def close(self):
         if self.busy:
             self.status.set("Wait for the current action to finish before closing. Closing cannot cancel Lua already running.")
         elif self.discard_changes():
             self.root.after_cancel(self.poll_handle)
+            self.clear_guide_arrow()
             for value, trace in self.path_traces:
                 value.trace_remove("write", trace)
             self.status.trace_remove("write", self.status_trace)
             self.root.destroy()
             # Release Tk images on the UI thread, including repeated test windows.
-            del self.header_logo, self.header_art, self.icon
+            del self.header_logo, self.icon
 
 
 def main():
@@ -581,8 +742,9 @@ def main():
                           and (bridge / "common/README.txt").is_file())
             result = {"ok": bool(not app.busy and app.last_result and app.last_result.get("ok") and assets),
                       "window_mapped": bool(root.winfo_ismapped()), "bridge_assets": assets,
-                      "branding_loaded": app.header_logo.width() > 0 and app.header_art.width() > 0,
+                      "branding_loaded": app.header_logo.width() > 0,
                       "display_font": app.display_family,
+                      "navigation": list(app.navigation), "guide_steps": len(GUIDE),
                       "tabs": [app.tabs.tab(page, "text") for page in app.tabs.tabs()]}
             atomic_text(arguments.smoke_report, json.dumps(result))
             root.after_cancel(app.poll_handle)

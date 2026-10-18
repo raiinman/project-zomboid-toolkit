@@ -16,7 +16,7 @@ Server administration and gameplay automation remain later milestones.
 
 ## Setup
 
-Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.2.0/pz-windows.zip),
+Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.3.0/pz-windows.zip),
 extract it, and double-click **PZToolkit.exe**. It opens a proper desktop window;
 no terminal or Python installation is needed.
 
@@ -34,10 +34,13 @@ default. Setup shows the active file and can open an existing toolkit config.
 Unsaved settings must be saved before tool actions. One background action runs
 at a time, keeping the window responsive while the game returns a result.
 
-The desktop uses a distressed **Dead Signal Interactive** identity, a dark
-industrial horror palette and an empty abandoned-facility header. There are no
-creature figures in the artwork. The theme preserves native controls and literal
-test outcomes. Its visual contract is in [DESIGN.md](DESIGN.md).
+The desktop keeps the distressed **Dead Signal Interactive** logo in a charcoal,
+ivory and studio-red sidebar. Choose **Mods**, **In-game tests** or **Setup** in
+the sidebar, and resize the activity/results dock to see more output. The optional
+**Show guide** walkthrough points arrows at the next control across eight steps,
+from saving setup to running a scenario. **Previous**, **Next** and **Show me**
+let you revisit instructions; moving through the guide does not execute actions
+or establish a passing test. Its visual contract is in [DESIGN.md](DESIGN.md).
 
 Live testing requires your own Project Zomboid installation. The launcher targets
 Windows and Build 42. **pz.exe** remains a separate console CLI and MCP server.
@@ -163,11 +166,11 @@ uv build
 
 Tests include actual MCP stdio discovery/invocation, filesystem containment,
 deployment ownership, stale response handling, and Lua 5.1 bridge mocks.
-The local suite passed 85 tests, including native GUI flows and theme checks. Startup was checked against an isolated 42.20.0
-client; in-world bridge assertions remain pending. See the measured
-[validation record](docs/validation.md) and [delivery plan](docs/plan.md).
-The current theme's rendered finish review is pending after desktop control was
-stopped; source, asset and automated contrast checks are separate evidence.
+GUI checks cover native controls, guide progression, error handling and theme
+colors. Startup was checked against an isolated 42.20.0 client; in-world bridge
+assertions remain pending. The new layout's full executable and rendered review
+results belong in the measured [validation record](docs/validation.md), with
+outstanding acceptance in the [delivery plan](docs/plan.md).
 
 Four broad internet passes and four additional PZWiki passes informed the design:
 [research](docs/research.md), [wiki findings](docs/wiki-research.md), and

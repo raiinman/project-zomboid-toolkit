@@ -37,6 +37,18 @@ Keep unchecked game acceptance visible when the executable cannot be launched or
 the bridge cannot be exercised. Publishing an initial repository does not imply
 the live-game checkpoint passed.
 
+## Desktop redesign acceptance
+
+- [x] Charcoal, ivory and studio-red sidebar layout preserves the approved logo.
+- [x] Optional eight-step guide points to controls and supports manual navigation.
+- [x] Guide regression tests distinguish successful actions from failures and
+  unavailable bridge readiness.
+- [ ] All three pages, guide arrows, focus and error states pass native rendered
+  checks at default and minimum window sizes.
+- [ ] Frozen v0.3.0 GUI, CLI and MCP pass executable checks and release CI.
+
+These checkpoints do not establish live in-world assertions.
+
 ## Verification method
 
 Run focused tests as each executable slice lands, then the full pytest suite.

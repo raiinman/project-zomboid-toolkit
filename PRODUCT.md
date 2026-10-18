@@ -23,19 +23,27 @@ The same tools must remain available through CLI and MCP.
 
 ## Brand Commitments
 
-Dead Signal Interactive branding is required. The user explicitly approved a
-distressed treatment of the actual logo and requested an Alien vs Predator,
-zombie-inflected visual world. Keep the studio name and recognizable logo shape.
-The horror reference applies to atmosphere and materials only: no actual aliens,
-predators, zombies or other creature figures in the interface artwork.
-The user selected building the working GUI directly, rather than a concept-first
-approval process. No product capabilities or evidence claims change with theme.
+Dead Signal Interactive branding is required. Keep the existing approved
+distressed logo PNG unchanged, including the studio name and recognizable shape.
+The current direction is a charcoal, ivory and studio-red workbench with sidebar
+navigation and a resizable activity dock. The user explicitly rejected green.
+No actual aliens, predators, zombies or other creature figures belong in the UI.
+
+The user requested guidance for someone learning the app. Provide an optional
+eight-step walkthrough, concise instructions and arrows pointing to relevant
+actions. Advance automatically only after the corresponding successful operation;
+require actual bridge readiness before advancing that step. Manual guide
+navigation never establishes operational success.
+
+The user selected building the working GUI directly. Apply the relevant guidance
+from their 3d-and-web library within native Tk controls.
 
 ## Evidence
 
-The GUI exists and has native widget regression coverage. The earlier pale GUI
-was inspected in its packaged window; the current horror theme has not received
-a rendered finish review because desktop control was stopped by the user.
-The user's existing Dead Signal brand kit supplies the
-original logo. A screenshot of a scenario result does not establish actual game
-execution unless it came from the live bridge.
+The new GUI exists and has native widget regression coverage, including guide
+progression and readiness checks. All three pages have native default/minimum
+layout inspection. Frozen GUI, CLI and MCP smoke checks passed. Complete rendered
+coverage of busy, empty and edited-scenario states remains outstanding.
+Current measured outcomes belong in docs/validation.md. The user's existing Dead
+Signal brand kit supplies the original logo. A screenshot of a scenario result
+does not establish game execution unless it came from the live bridge.

@@ -53,9 +53,11 @@ edits that preserve contracts may leave docs unchanged after this pass.
 
 - Distribute a standalone windowed `PZToolkit.exe` for mod management and in-game tests. Preserve `pz.exe` as the CLI/MCP entry point; the desktop workflow must not require PowerShell or a Python installation.
 - Brand the GUI as Dead Signal Interactive with the approved distressed logo.
-  Use the requested sci-fi/zombie horror atmosphere through materials and
-  lighting only, with no actual aliens, predators or creature figures. Preserve
-  clear native controls and evidence boundaries while changing its appearance.
+  Preserve its existing PNG while using the charcoal, ivory and studio-red
+  sidebar workbench in DESIGN.md. The user rejected green. Keep creatures out
+  of the interface and preserve clear native controls and evidence boundaries.
+- Provide an optional eight-step guide with arrows pointing to the next control.
+  Navigation through the guide must never imply that an operation succeeded.
 - Continue authorized implementation and routine maintenance autonomously.
 - Subagents are authorized. Coordinate ownership before concurrent edits.
 - Treat user input during work as steering while preserving the active goal.
@@ -91,3 +93,5 @@ scratch work and local review captures are ignored by Git.
 and executable smoke tests. Bundle the required runtimes and bridge assets;
 verify the desktop window, CLI and MCP before delivery. Keep binaries in ignored
 `dist/`. The root owns native app packaging and ZIP delivery contracts.
+`packaging/build.ps1 -OutputDirectory dist/<version>` can preserve an older
+running executable while building a new version; the default remains `dist`.

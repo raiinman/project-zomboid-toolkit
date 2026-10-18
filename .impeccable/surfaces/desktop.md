@@ -1,9 +1,12 @@
 # Desktop app
 
-Mode: Operate. Native Windows Tk application, not a website or mobile wrapper.
+Mode: Operate. Native Windows Tk application.
 
-Success is creating/checking/deploying a mod and running a saved trusted Lua
-scenario without opening PowerShell. Keep the existing three tabs and shared
-registry. The user's pinned horror world and code-first choice govern the build;
-DESIGN.md owns its type, palette, density and containment header. All working
-states and evidence boundaries remain literal and accessible.
+Success is creating, checking and deploying a mod and running a saved trusted Lua
+scenario from the app. Mods, In-game tests and Setup use sidebar navigation and
+the shared registry. The resizable activity dock keeps results visible.
+
+DESIGN.md owns the charcoal, ivory and studio-red palette, typography, retained
+distressed logo and optional eight-step guide arrows. The user rejected green and
+selected the code-first build path. Native controls, operational feedback and
+evidence boundaries remain literal and accessible.

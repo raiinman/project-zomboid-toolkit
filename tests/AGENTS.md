@@ -7,6 +7,8 @@ Verify tool contracts and regression behavior independently of game ownership.
 Offline unit/integration tests, fixtures, and protocol parity checks.
 `test_gui.py` owns real Windows Tk widget flows with temporary workspaces and
 simulated bridge responses, including responsive waits and workspace switching.
+It also verifies sidebar navigation, guide arrows, successful-action advancement,
+completion and failure gating, readable contrast and the no-green control palette.
 
 ## Local Contracts
 

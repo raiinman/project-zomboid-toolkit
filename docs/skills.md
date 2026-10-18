@@ -2,8 +2,8 @@
 
 The user requested available skills and their [skill-library](https://github.com/raiinman/skill-library/tree/main).
 Skill discovery selected workflows relevant to a Python CLI/MCP and game harness.
-Unrelated cloud, finance, artwork, office, video, and web UI workflows do not apply
-to this repository. Applying every unrelated skill would add conflicting scope.
+Relevant native UI and artwork workflows were added for the desktop app.
+Unrelated cloud, finance, office and video workflows remain outside this scope.
 
 ## Source snapshots
 
@@ -46,7 +46,7 @@ Review used the
 [simplification workflow](https://github.com/raiinman/skill-library/blob/d6bbba316347b12ab9df3fa3602b53a6e9adebeb/skills/coding-workflow/code-simplification/SKILL.md), and
 [doubt workflow](https://github.com/raiinman/skill-library/blob/d6bbba316347b12ab9df3fa3602b53a6e9adebeb/skills/coding-workflow/doubt-driven-development/SKILL.md).
 Security/performance reference checklists were consulted where applicable; web
-headers, cookies, database, and frontend checks have no runtime surface here.
+headers, cookies and database checks have no runtime surface here.
 
 Review included disposable Windows child-process and directory-junction probes.
 Windows child outcomes were inconsistent and were not accepted as definitive
@@ -96,7 +96,17 @@ image-generation skill produced the distressed logo and corrected empty-facility
 header. Asset prompts/provenance are under `src/pztoolkit/assets/gui/`.
 
 Oxanium is bundled from the official Google Fonts source with its OFL license.
-A fresh reviewer checked actual artwork and source without inheriting the build
-conversation. That review found no source/artwork blocker, but did not certify
-rendered appearance: Computer Use had been stopped with Escape. No screenshot
-or alternative desktop automation was used to bypass that stop.
+A fresh reviewer checked the earlier artwork and source without inheriting the
+build conversation. That source/artwork review did not certify rendered appearance.
+
+For the v0.3.0 redesign, the user explicitly selected
+[3d-and-web](https://github.com/raiinman/skill-library/tree/main/skills/3d-and-web).
+Its frontend-design and ui-animation instructions were fetched fresh through the
+GitHub API. Frontend-design informed the sidebar hierarchy, charcoal/ivory/red
+tokens and resizable output dock. UI-animation kept progress tied to actual work
+without decorative flicker. These principles are adapted to Tk; no web or 3D
+runtime was added. Context7 supplied current CPython Notebook, Panedwindow and
+Canvas arrow documentation. The existing distressed logo PNG is preserved and
+the facility panorama is no longer displayed. The eight-step guide adds control
+arrows and explicit success-dependent progression. Native rendered review and
+executable checks are tracked separately from source review and live game tests.

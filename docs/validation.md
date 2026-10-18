@@ -5,7 +5,7 @@ implementation, separately from the research findings.
 
 | Check | Result |
 | --- | --- |
-| Full offline suite | 85 tests passed on local Windows, Python 3.11, including native GUI flows, contrast and result-tone reset checks |
+| Full offline suite | 89 tests passed on local Windows, Python 3.11, including 16 native GUI tests for guide arrows, success/failure completion, readiness gating, contrast and result-tone reset. The 16 GUI tests passed again after the minimum-size footer fix |
 | MCP connection | Actual stdio handshake, discovery, schema parity and invocation passed |
 | Boundary cases | Invalid inputs, ownership collisions, traversal and Windows junction regressions passed |
 | Harness transport | Correlation, stale responses, failure, malformed result, timeout, lock cleanup and reports passed |
@@ -17,7 +17,8 @@ implementation, separately from the research findings.
 | Native GUI | Real Tk widget flows cover setup validation, mod creation/check/deploy, saved scenario editing, trust gating, background responsiveness, pass/fail/timeout reports and cross-workspace discard safety |
 | Frozen desktop smoke | Windowed PE subsystem, actual mapped Tk window, three page controls, private font, artwork, background dispatch and bundled bridge deployment passed from a temporary directory |
 | Earlier GUI visual inspection | The initial pale window was inspected through Computer Use; mod/scenario controls fit and bridge diagnostics worked |
-| Horror theme | Corrected empty-facility artwork and distressed studio mark inspected; source review and automated contrast/font checks passed. Current rendered appearance at default/minimum sizes remains unverified after the user stopped desktop control |
+| Studio redesign | Native Setup, Mods and In-game tests inspected at 1280 x 960 and 1100 x 860, including guide arrow, sidebar focus/selection, hidden guide and bridge warning. The frozen default Setup page was also inspected. A clipped minimum-size Mods note was fixed by reserving footer space; its rendered confirmation is pending. The existing distressed logo PNG is unchanged and the facility panorama is not displayed |
+| Independent visual review | Four native captures reviewed with no blockers or major findings. Minor: the activity divider grip could be more prominent. Busy, empty and edited-scenario states have widget coverage; their complete rendered review remains outstanding |
 | Local CLI smoke | Doctor, profile preparation, sample scaffold/check/deploy passed |
 | Real game startup | Windows client process launched with isolated cachedir, debug and mods-only discovery |
 | Runtime startup artifacts | Isolated console/OpenGL initialization and version file created, reporting 42.20.0, revision a2947723ca |

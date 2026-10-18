@@ -33,6 +33,11 @@ transport, and packaged Lua bridge assets.
   with unsaved setup changes, preserve unsaved scenario edits across workspace
   switches, and show errors and inconclusive timeouts in the window. Settings
   default to `%LOCALAPPDATA%/PZToolkit/config.json`; writes still require Save.
+- Present native sidebar pages and a resizable activity dock. The optional
+  eight-step guide points to actual controls, permits manual navigation and
+  advances automatically only after the matching successful action. Bridge
+  readiness requires `ready=true`; only a passing harness result completes it.
+  Never execute tools merely by navigating the guide.
 
 ## Work Guidance
 

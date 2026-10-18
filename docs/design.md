@@ -106,7 +106,11 @@ subsystem, actual mapped Tk window, page controls, background dispatch and bundl
 bridge deployment. The frozen entry points reset the Windows
 DLL directory so external game processes inherit normal DLL lookup paths.
 
-The native Tk adapter has Setup, Mods and In-game tests tabs. Configuration is
+The native Tk adapter has Mods, In-game tests and Setup pages selected from a
+sidebar, with a resizable activity/results dock. Its optional eight-step guide
+points to the next action and advances after the matching successful operation;
+bridge guidance requires a ready heartbeat. Previous, Next and Show me navigate
+instructions without executing tools or claiming success. Configuration is
 saved explicitly, defaulting to `%LOCALAPPDATA%/PZToolkit/config.json`; an existing
 CLI/MCP config can be opened in the app. GUI actions use `Toolkit.call`, with one
 worker at a time and queue-delivered results on the UI thread. Unsaved settings

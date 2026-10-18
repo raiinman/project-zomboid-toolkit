@@ -161,6 +161,7 @@ def test_test_run_keeps_ui_responsive_and_reports_outcomes(app, outcome):
         responder.start()
     ticks = []
     app.root.after(1, lambda: ticks.append(1))
+    app.show_guide(7)
     press(app, "Run saved scenario")
     assert app.busy
     assert str(app.run_button.cget("state")) == "disabled"
@@ -173,6 +174,8 @@ def test_test_run_keeps_ui_responsive_and_reports_outcomes(app, outcome):
     assert ticks, "GUI event loop blocked during the harness wait"
     assert result["status"] == ("passed" if outcome is True else "failed" if outcome is False else "timed_out")
     assert list((app.toolkit.profile / "reports").glob("*.json"))
+    assert app.guide_complete is (outcome is True)
+    assert (app.guide_arrow is None) is (outcome is True)
     assert "unknown" in app.status.get() if outcome is None else "fixture verdict" in app.output.get("1.0", "end")
 
 
@@ -194,7 +197,7 @@ def test_theme_keeps_reading_and_action_surfaces_legible(app):
     for name in ("TLabel", "Subtitle.TLabel", "TButton", "Accent.TButton", "Status.TLabel", "Error.Status.TLabel", "Warning.Status.TLabel"):
         values = sorted((luminance(style.lookup(name, "foreground")), luminance(style.lookup(name, "background"))))
         assert (values[1] + 0.05) / (values[0] + 0.05) >= 4.5, name
-    assert app.header_logo.width() > 0 and app.header_art.width() > 0
+    assert app.header_logo.width() > 0
     assert app.display_family == "Oxanium SemiBold"
 
 
@@ -203,3 +206,53 @@ def test_result_tone_resets_when_next_action_changes_status(app):
     assert app.status_label.cget("style") == "Error.Status.TLabel"
     app.status.set("Setup saved.")
     assert app.status_label.cget("style") == "Status.TLabel"
+
+
+def test_guide_arrows_advance_only_after_successful_actions(app):
+    assert app.guide_index == 1  # Fixture saved setup through the real UI handler.
+    app.show_guide(2)
+    assert app.guide_target.cget("text") == "Create mod"
+    assert app.guide_arrow is not None
+    app.mod_name.set("invalid name")
+    press(app, "Create mod")
+    assert "error" in wait(app)
+    assert app.guide_index == 2
+    app.mod_name.set("GuiExample")
+    press(app, "Create mod")
+    assert wait(app)["id"] == "GuiExample"
+    assert app.guide_index == 3
+    assert app.guide_target.cget("text") == "Check selected"
+    app.guide_enabled.set(False)
+    app.toggle_guide()
+    assert app.guide_arrow is None
+
+
+def test_guide_does_not_mark_bridge_ready_from_a_failed_readiness_check(app):
+    press(app, "Prepare test profile")
+    wait(app)
+    app.show_guide(6)
+    press(app, "Check bridge")
+    assert wait(app)["ready"] is False
+    assert app.guide_index == 6
+    assert app.guide_target.cget("text") == "Check bridge"
+
+
+def test_sidebar_navigation_and_guide_reveal_selected_page(app):
+    app.navigation["In-game tests"].invoke()
+    app.root.update()
+    assert app.tabs.tab(app.tabs.select(), "text") == "In-game tests"
+    assert app.page_title.get() == "In-game tests"
+    assert app.guide_arrow is None
+    app.guide_show.invoke()
+    app.root.update()
+    assert app.tabs.tab(app.tabs.select(), "text") == "Setup"
+    assert app.guide_target.cget("text") == "Prepare test profile"
+
+
+def test_new_theme_uses_no_green_controls(app):
+    style = ttk.Style(app.root)
+    for name in ("TButton", "Accent.TButton", "Selected.Nav.TButton", "Status.TLabel", "Treeview", "Guide.TButton"):
+        for option in ("foreground", "background"):
+            color = style.lookup(name, option)
+            red, green, blue = (int(color[index:index + 2], 16) for index in (1, 3, 5))
+            assert green <= max(red, blue), (name, option, color)

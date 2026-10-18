@@ -4,6 +4,12 @@ Extract the ZIP into its own folder and double-click **PZToolkit.exe**. It opens
 the desktop app without a terminal. Python is bundled; no separate installation
 is needed.
 
+The sidebar selects **Mods**, **In-game tests** and **Setup**. Leave **Show guide**
+enabled for eight short steps with arrows pointing at the next control. **Show me**
+opens the relevant page; **Previous** and **Next** revisit instructions without
+running actions. Successful actions advance the matching step. Resize the
+activity/results dock by dragging its divider when you need more output space.
+
 1. In **Setup**, choose your game installation, mod workspace and a new isolated
    test profile. Choose **Save setup**, then **Prepare test profile**.
 2. In **Mods**, enter a mod ID, choose **Create mod**, then select it and choose

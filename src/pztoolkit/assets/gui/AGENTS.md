@@ -13,7 +13,10 @@ GUI PNG artwork, the studio icon, the bundled display font and its license.
   surfaces are approved; changing its geometry or spelling is not.
 - Environmental horror only. Do not add actual aliens, predators, zombies or
   creature silhouettes to application artwork.
-- Keep artwork away from controls and preserve readable, literal state feedback.
+- Keep the approved distressed logo PNG unchanged for the sidebar GUI. Follow
+  DESIGN.md's charcoal, ivory and studio-red palette; the user rejected green.
+  The retained facility panorama is not displayed by the current GUI.
+- Keep artwork away from controls and guide arrows, preserving literal feedback.
 - Retain the font's SIL OFL license and its source provenance.
 - Include these assets in wheel and frozen GUI builds. Load fonts privately in
   the app process; do not install them into system font directories.
