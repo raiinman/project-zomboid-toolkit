@@ -43,7 +43,7 @@ content; its motion guidance keeps animation tied to real work, not decoration.
 ## Guided workflow
 
 An optional guide strip shows eight steps: Save setup, Prepare test profile,
-Create mod, Check selected, Deploy to test profile, Launch test game, Check bridge,
+Create mod, Check selected, Deploy to test profile, Launch Project Zomboid (test profile), Check bridge,
 and Run saved scenario. A real arrow highlights the matching button on the
 current page. Show me opens that page; Previous and Next revisit instructions.
 Hide the guide through Show guide in the sidebar.

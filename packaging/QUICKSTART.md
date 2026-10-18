@@ -16,7 +16,7 @@ activity/results dock by dragging its divider when you need more output space.
 2. In **Mods**, enter a mod ID, choose **Create mod**, then select it and choose
    **Check selected** and **Deploy to test profile**. **Open mod folder** opens
    its source files in Explorer for editing with your preferred editor.
-3. In **In-game tests**, choose **Launch test game**. Enable **PZ Toolkit Bridge**
+3. In **In-game tests**, choose **Launch Project Zomboid (test profile)**. Enable **PZ Toolkit Bridge**
    and your mod in the game's Mods menu. Enter a disposable single-player world
    and unpause it.
 4. Choose **Check bridge**, select a generated scenario, review or edit the Lua,

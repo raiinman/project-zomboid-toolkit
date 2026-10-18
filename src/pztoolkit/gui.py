@@ -27,7 +27,7 @@ GUIDE = (
     ("Mods", "Create mod", "mod_create", "Create a development mod", "Enter a new mod ID, then create it. A matching Lua smoke scenario is generated for you."),
     ("Mods", "Check selected", "mod_check", "Check your mod", "Select a mod in the list, then check its folder layout and metadata."),
     ("Mods", "Deploy to test profile", "mod_deploy", "Deploy your changes", "Copy the checked mod into the isolated profile. Previous deployments are backed up."),
-    ("In-game tests", "Launch test game", "game_launch", "Open the test game", "Launch the isolated game. Enable PZ Toolkit Bridge and your mod, load a disposable single-player world and unpause it."),
+    ("In-game tests", "Launch Project Zomboid (test profile)", "game_launch", "Open Project Zomboid", "Launch Project Zomboid with the isolated test profile. Enable PZ Toolkit Bridge and your mod, load a disposable single-player world and unpause it."),
     ("In-game tests", "Check bridge", "bridge_status", "Wait for the game bridge", "Keep the test world loaded and unpaused, then check that the bridge is ready."),
     ("In-game tests", "Run saved scenario", "harness_run", "Run your first test", "Review the scenario, save any edits, select the trust checkbox and run. Results appear in the activity dock."),
 )
@@ -382,7 +382,9 @@ class Application:
     def _tests_page(self):
         row = ttk.Frame(self.tests)
         row.pack(fill="x", pady=(0, 8))
-        self.button(row, "Launch test game", lambda: self.dispatch("game_launch"))
+        self.button(row, "Launch Project Zomboid (test profile)", lambda: self.dispatch("game_launch"))
+        row = ttk.Frame(self.tests)
+        row.pack(fill="x", pady=(0, 8))
         self.button(row, "Check bridge", lambda: self.dispatch("bridge_status"))
         self.button(row, "Read game logs", lambda: self.dispatch("logs_read"))
         self.button(row, "Open reports", self.open_reports)
@@ -772,12 +774,22 @@ def main():
                                and button.winfo_rootx() + button.winfo_width() <= app.setup.winfo_rootx() + app.setup.winfo_width()
                                and button.winfo_rooty() + button.winfo_height() <= app.setup.winfo_rooty() + app.setup.winfo_height()
                                for button in setup_buttons)
+            app.tabs.select(app.tests)
+            root.update_idletasks()
+            test_controls = [button for button in app.actions if str(button).startswith(str(app.tests) + ".")]
+            test_controls += [widget for widget in app.tests.winfo_children() if isinstance(widget, ttk.Checkbutton)]
+            test_controls_fit = all(button.winfo_ismapped()
+                                    and app.tests.winfo_rootx() <= button.winfo_rootx()
+                                    and button.winfo_rootx() + button.winfo_width() <= app.tests.winfo_rootx() + app.tests.winfo_width()
+                                    and button.winfo_rooty() + button.winfo_height() <= app.tests.winfo_rooty() + app.tests.winfo_height()
+                                    for button in test_controls)
             result = {"ok": bool(not app.busy and app.last_result and app.last_result.get("ok") and assets),
                       "window_mapped": bool(root.winfo_ismapped()), "bridge_assets": assets,
                       "branding_loaded": app.header_logo.width() > 0,
                       "display_font": app.display_family,
                       "navigation": list(app.navigation), "guide_steps": len(GUIDE),
                       "setup_controls_fit": controls_fit,
+                      "test_controls_fit": test_controls_fit,
                       "tabs": [app.tabs.tab(page, "text") for page in app.tabs.tabs()]}
             atomic_text(arguments.smoke_report, json.dumps(result))
             root.after_cancel(app.poll_handle)

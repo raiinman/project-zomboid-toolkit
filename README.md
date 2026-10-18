@@ -16,7 +16,7 @@ Server administration and gameplay automation remain later milestones.
 
 ## Setup
 
-Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.3.1/pz-windows.zip),
+Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.3.2/pz-windows.zip),
 extract it, and double-click **PZToolkit.exe**. It opens a proper desktop window;
 no terminal or Python installation is needed.
 

@@ -60,6 +60,8 @@ edits that preserve contracts may leave docs unchanged after this pass.
   of the interface and preserve clear native controls and evidence boundaries.
 - Provide an optional eight-step guide with arrows pointing to the next control.
   Navigation through the guide must never imply that an operation succeeded.
+- Label the game launcher "Launch Project Zomboid (test profile)" in the GUI,
+  guide and operating instructions so the real game's isolated profile is clear.
 - Detect game folders on first setup and offer Detect folders for later scans.
   Preserve saved workspace/profile choices; preview changes before Save setup.
 - Continue authorized implementation and routine maintenance autonomously.
