@@ -52,6 +52,8 @@ edits that preserve contracts may leave docs unchanged after this pass.
 ## User Preferences
 
 - Distribute a standalone windowed `PZToolkit.exe` for mod management and in-game tests. Preserve `pz.exe` as the CLI/MCP entry point; the desktop workflow must not require PowerShell or a Python installation.
+- Install the Windows app per user with a Start menu entry under Dead Signal
+  Interactive. Preserve existing configuration, workspaces and isolated profiles.
 - Brand the GUI as Dead Signal Interactive with the approved distressed logo.
   Preserve its existing PNG while using the charcoal, ivory and studio-red
   sidebar workbench in DESIGN.md. The user rejected green. Keep creatures out
