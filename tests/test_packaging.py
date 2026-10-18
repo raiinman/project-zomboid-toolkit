@@ -164,7 +164,8 @@ def test_scan_receipt_rejects_archive_member_drift_even_with_updated_zip_hash(tm
 
 
 @pytest.mark.parametrize("case,accepted", [
-    ("raw", True), ("tagged", True), ("missing_unrelated", True),
+    ("raw", True), ("tagged", True), ("folder_tagged", True),
+    ("double_tagged", False), ("missing_unrelated", True),
     ("delayed", True), ("different", False), ("multiple", False),
     ("cancelled", False), ("mismatched_id", False), ("missing", False),
 ])
@@ -191,6 +192,8 @@ $script:Target = 'C:\fixture\bundle'
 $resource = $script:Target
 switch ($Case) {
     'tagged' { $resource = "`nfile:_$script:Target`n" }
+    'folder_tagged' { $resource = "`nfolder:_$script:Target`n" }
+    'double_tagged' { $resource = "folder:_file:_$script:Target" }
     'different' { $resource = 'file:_C:\fixture\bundle-other' }
     'multiple' { $resource = "file:_$script:Target`nfile:_C:\other" }
     'missing' { $resource = $null }

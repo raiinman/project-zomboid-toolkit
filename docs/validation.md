@@ -1,11 +1,12 @@
 # Validation record
 
-## v0.4.2 Windows candidate
+## v0.4.2 installed Windows candidate
 
 The clean-build/provenance, optional trusted-signing and normal Defender scan
-gates passed independent source review. The full local suite passed **206
-tests**, including 19 packaging fixtures. No candidate executable was run
-locally. Actual clean CI scanning and frozen probes remain pending.
+gates passed independent source review. The full local suite passed **215
+tests**, including 28 packaging fixtures. The final folder-tag helper fix then
+passed all 30 focused packaging cases. Candidate execution occurred only after
+the actual-PC scan described below. GUI executable probes remain deferred.
 
 CI run `39098858667` passed the clean Windows build and native-origin gate,
 but stopped before scanning because the runner lacked active/current Defender
@@ -19,11 +20,54 @@ The user confirmed no signing identity exists. Candidates remain unsigned;
 trusted publisher signing cannot be completed without external enrollment.
 The blocked v0.4.1 release has a visible security-review warning.
 
+Clean CI run `39099328529` built implementation commit
+`d18977f122065f602f0fb0b4530c9f57c57fc4fb` with native-origin verification.
+All four offline test jobs passed their test steps, but the Windows packaging
+job remains failed because hosted Defender was unavailable. Frozen CI probes
+were skipped; no green CI or rendered GUI result is implied.
+
+On the actual PC, ordinary Defender scanning of the unchanged extracted bundle
+and ZIP passed at `2026-10-18T05:09:40Z`, using engine `1.1.26090.9` and
+signatures `1.461.79.0` in Normal mode. Scan event pairs `26745/26746` and
+`26747/26748` correlate the exact folder and ZIP. No new/changed detections or
+file hashes were observed. ZIP SHA-256:
+`462C0F6F3EED3648231BE42080B713E3F29EDBDA55DC7DC873B0397CB9B6E9D3`.
+The external scan helper accepts the PC's observed `folder:_` tag. Its focused
+suite passes 30 packaging cases; the candidate application bytes were unchanged.
+Receipts remain in private app-owned staging. This is point-in-time clearance,
+not trusted signing or a determination about the old detection.
+
 A bounded authenticated predefined command was sent directly through the
 already-running game bridge, without executing the quarantined CLI. The game
 returned correlated success, `God mode enabled`, after actual readback.
-This completes native god-mode enable verification on 42.20.4, but does not
-verify restored MCP transport. Editor/mod tests are deferred to Javelin work.
+This completes native god-mode enable verification on 42.20.4. Editor/mod tests
+are deferred to Javelin work.
+
+After the successful scan, the installer copied the complete byte-identical
+bundle, reverified all installed files and ZIP members, updated the existing
+Start menu target and enabled global `project-zomboid` MCP registration.
+Configuration and bridge-token SHA-256 values are unchanged. Unrelated MCP
+definitions compare equal after canonicalizing JSON key order. An interrupted
+registration attempt rolled back before the verified retry; no quarantined
+binary was restored. The GUI and game were not launched, activated or controlled.
+
+At `2026-10-18T05:23:04Z`, the installed `pz.exe serve` passed a hidden real
+stdio MCP initialize/list/call probe: the exact 11-tool registry, `doctor`,
+`bridge_status` and `debug_editors` succeeded. Fresh game status reports
+`ready=true`, `debug=true`, `god_mode=true` and built-in operations available.
+Custom Lua remains unavailable on this build. Editor IDs were discovered without
+opening editors or changing the game. The probe shut down its own server process.
+This chat has not rediscovered the native MCP tool namespace; its host connection
+may need refreshing even though registration and actual server transport pass.
+After the probe, the installed CLI still exists with SHA-256
+`3F0EDBC0E9658629AF70610C337C94C22774C1480B33DB68517778B198987E2C`.
+There are zero new Defender 1116/1117 events after scan completion, and protection
+remains active and current in Normal mode.
+
+DOX closeout updated release/validation guidance, scan-helper and test contracts,
+and the no-desktop-control preference. Source/game/asset contracts and child
+indexes remain unchanged because this recovery changes packaging and installation,
+not their behavior or ownership. No new rendered GUI acceptance is claimed.
 
 ## v0.4.1 compatibility update
 
@@ -31,7 +75,7 @@ Subsequent PC inspection found that Microsoft Defender quarantined the v0.4.1
 console `pz.exe` as `Trojan:Win32/Bearfoos.A!ml`. Earlier hash/protocol checks
 remain historical evidence, not proof of current MCP availability or a false
 positive. The flagged executable has not been restored, allowed or excluded.
-Current direct MCP calls fail because that installed file is missing.
+At discovery, direct MCP calls failed because that installed file was missing.
 
 The user clarified the cursor is missing from game startup, not only while
 aiming. With the game closed, the isolated profile's display settings were

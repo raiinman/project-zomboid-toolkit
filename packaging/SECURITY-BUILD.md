@@ -19,6 +19,10 @@ remediation. It never disables protection, adds exclusions or restores files.
 successful scan completion, no new/changed detections and unchanged bundle
 hashes. It correlates new Defender event 1000/1001 records by Scan ID and exact
 scan target, rejecting cancelled/failed scans and unknown event schemas.
+Resource matching accepts one observed `file:_` or `folder:_` tag and outer
+whitespace, then requires the exact target path. Resource lists, repeated tags
+and different paths remain rejected. Event publication has a bounded ten-second
+wait; missing completion still fails closed.
 Missing/unknown scanner state fails closed. Probe helpers verify all
 bundle hashes and a receipt no older than 24 hours before launching anything.
 Receipts and scan logs contain local paths; keep them in ignored build output

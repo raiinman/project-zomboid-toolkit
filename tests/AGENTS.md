@@ -20,7 +20,8 @@ disablement and API failure reporting. Launch fixtures cover changed bridge
 refresh with backup/token preservation and no redeploy of unchanged scripts.
 `test_packaging.py` owns native-input origin and scan-receipt rejection fixtures.
 Its PowerShell event fixtures extract only scan-correlation functions, mock log
-records and waits, and verify exact raw/tagged paths, delayed publication and
+records and waits, and verify exact raw or singly file/folder-tagged paths,
+repeated-tag rejection, delayed publication and
 missing, unrelated, multiple-resource, mismatched-ID and cancelled scan events.
 These tests do not execute candidate binaries or establish antivirus clearance.
 

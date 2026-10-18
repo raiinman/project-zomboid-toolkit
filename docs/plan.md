@@ -28,7 +28,8 @@ measured test and runtime evidence.
 - [x] Saved settings, token and existing isolated profile survive upgrade.
 - [x] Startup debug/god mode are confirmed in a loaded native world.
 - [x] Historical v0.4.1 executable probes passed before the Defender quarantine.
-- [ ] Clean v0.4.2 candidate passes provenance, Defender and executable gates.
+- [x] Clean v0.4.2 candidate passes provenance and actual-PC Defender gates; installed MCP initialize/list/call succeeds.
+- [ ] v0.4.2 frozen GUI probe and rendered review are completed when desktop work is authorized.
 - [ ] A trusted signing identity is provisioned and actual signatures verify.
 - [ ] Final rendered default/minimum windows, help, errors and advanced controls are inspected.
 - [x] Installed app and Start menu entry are verified on the actual PC.

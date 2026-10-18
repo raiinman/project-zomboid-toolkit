@@ -51,12 +51,14 @@ function Get-DetectionKeys {
     })
 }
 function Test-ScanResource([string]$Resource, [string]$Target) {
-    # Defender may wrap one file path in whitespace and its file:_ resource tag.
+    # Defender may wrap one path in whitespace and one file:_ or folder:_ tag.
     # Only a single exact path is acceptable, never a substring or resource list.
     $value = $Resource.Trim()
     if (!$value -or $value -match '[\r\n]') { return $false }
     if ($value.StartsWith('file:_', [StringComparison]::OrdinalIgnoreCase)) {
         $value = $value.Substring(6)
+    } elseif ($value.StartsWith('folder:_', [StringComparison]::OrdinalIgnoreCase)) {
+        $value = $value.Substring(8)
     }
     return $value.TrimEnd('\','/') -eq $Target.TrimEnd('\','/')
 }

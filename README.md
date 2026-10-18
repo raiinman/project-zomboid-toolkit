@@ -7,7 +7,7 @@
 </p>
 <p align="center"><a href="docs/design.md">Architecture</a> · <a href="docs/plan.md">Delivery plan</a> · <a href="docs/validation.md">Validation</a> · <a href="docs/skills.md">Skills</a> · <a href="AGENTS.md">Agent guidance</a></p>
 
-<p align="center"><strong>Windows distribution is under security review.</strong> Defender quarantined the v0.4.1 CLI. Do not restore it or add an exclusion. A clean, provenance-checked replacement is being prepared; no trusted signature or antivirus clearance is claimed yet.</p>
+<p align="center"><strong>v0.4.1 remains blocked.</strong> Defender quarantined its CLI. Do not restore it or add an exclusion. The clean CI-built v0.4.2 bundle passed an ordinary Defender scan on the development PC and is installed there with verified MCP transport. It remains unsigned; public downloads are withheld pending remaining release checks. See <a href="docs/validation.md">validation evidence</a>.</p>
 
 Connect Codex or another MCP client to your running Project Zomboid debug world.
 Use the desktop app to connect, change god mode, open built-in debug editors and
@@ -17,8 +17,8 @@ menu remains responsible for enabling mods.
 
 ## Open and connect
 
-Windows downloads are currently withheld pending the review above. The next
-candidate uses a complete application bundle, including support files.
+Windows downloads are currently withheld pending the checks above. Version 0.4.2
+uses a complete application bundle, including support files.
 Installed copies have a Start menu
 entry under **Dead Signal Interactive**. No terminal or Python installation is
 needed to use the app.
