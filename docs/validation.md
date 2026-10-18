@@ -7,6 +7,7 @@ implementation, separately from the research findings.
 | --- | --- |
 | Full offline suite | 107 tests passed on local Windows, Python 3.11, including 19 native GUI tests and 15 read-only discovery tests. Guide arrows, success/failure completion, readiness gating, contrast, first-launch detection, preview-only configuration and error handling are covered |
 | Folder discovery | Actual read-only detection found the installed game in its common install location. Fixture tests cover secondary Steam libraries, multiple installs, retained settings, malformed/inaccessible metadata, read bounds and normal-profile default rejection |
+| v0.3.1 delivery | Frozen GUI minimum-size Setup bounds, CLI bootstrap detection, shared tool discovery and actual MCP handshake passed. Installed the verified build per user, updated the existing Start menu shortcut and observed its installed window. Configuration hash remained unchanged. Installed folders_detect retained the existing game/workspace/profile paths |
 | MCP connection | Actual stdio handshake, discovery, schema parity and invocation passed |
 | Boundary cases | Invalid inputs, ownership collisions, traversal and Windows junction regressions passed |
 | Harness transport | Correlation, stale responses, failure, malformed result, timeout, lock cleanup and reports passed |
@@ -55,3 +56,10 @@ and verified the GUI, CLI and MCP executables. Uploaded release SHA-256 digests
 match the locally verified binaries and ZIP. Native input resumed by the user
 during final frozen-window review, so remaining rendered states and footer
 confirmation are explicitly pending; the app was left open.
+
+The [v0.3.1 folder-detection CI run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39090296966)
+passed all four Windows/Linux Python 3.11/3.12 jobs for `981853c`, including
+frozen executable checks on Windows 3.11. Release asset digests match the locally
+verified builds. This adds no new live-game acceptance evidence. The DOX pass
+updated root, source and test contracts; `docs/AGENTS.md` and GUI asset contracts
+are unchanged because ownership, indexes and artwork did not change.
