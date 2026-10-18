@@ -45,7 +45,7 @@ the live-game checkpoint passed.
   unavailable bridge readiness.
 - [ ] All three pages, guide arrows, focus and error states pass native rendered
   checks at default and minimum window sizes.
-- [ ] Frozen v0.3.0 GUI, CLI and MCP pass executable checks and release CI.
+- [x] Frozen v0.3.0 GUI, CLI and MCP pass executable checks and release CI.
 
 These checkpoints do not establish live in-world assertions.
 

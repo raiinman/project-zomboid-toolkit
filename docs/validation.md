@@ -43,9 +43,13 @@ The DOX closeout updated root, package, test and GUI-asset contracts and child
 indexes. `docs/AGENTS.md` remains unchanged because documentation ownership and
 evidence rules already cover these records.
 
-The [GitHub workflow run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39084742653)
+The [v0.3.0 GitHub workflow run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39089375898)
 passed all four jobs on Windows and Linux with Python 3.11 and 3.12 for
-implementation commit `c6d5aea`. Each job verified the frozen lock, installed
+implementation commit `fca1e89`. Each job verified the frozen lock, installed
 dependencies, checked dependency compatibility, compiled Python sources and ran
 the offline suite. This verifies the offline implementation across that matrix;
-it does not replace in-world game acceptance.
+it does not replace in-world game acceptance. The Windows 3.11 job also rebuilt
+and verified the GUI, CLI and MCP executables. Uploaded release SHA-256 digests
+match the locally verified binaries and ZIP. Native input resumed by the user
+during final frozen-window review, so remaining rendered states and footer
+confirmation are explicitly pending; the app was left open.
