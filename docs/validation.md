@@ -1,12 +1,56 @@
 # Validation record
 
+## v0.4.2 Windows candidate
+
+The clean-build/provenance, optional trusted-signing and normal Defender scan
+gates passed independent source review. The full local suite passed **206
+tests**, including 19 packaging fixtures. No candidate executable was run
+locally. Actual clean CI scanning and frozen probes remain pending.
+
+The user confirmed no signing identity exists. Candidates remain unsigned;
+trusted publisher signing cannot be completed without external enrollment.
+The blocked v0.4.1 release has a visible security-review warning.
+
+A bounded authenticated predefined command was sent directly through the
+already-running game bridge, without executing the quarantined CLI. The game
+returned correlated success, `God mode enabled`, after actual readback.
+This completes native god-mode enable verification on 42.20.4, but does not
+verify restored MCP transport. Editor/mod tests are deferred to Javelin work.
+
 ## v0.4.1 compatibility update
+
+Subsequent PC inspection found that Microsoft Defender quarantined the v0.4.1
+console `pz.exe` as `Trojan:Win32/Bearfoos.A!ml`. Earlier hash/protocol checks
+remain historical evidence, not proof of current MCP availability or a false
+positive. The flagged executable has not been restored, allowed or excluded.
+Current direct MCP calls fail because that installed file is missing.
+
+The user clarified the cursor is missing from game startup, not only while
+aiming. With the game closed, the isolated profile's display settings were
+backed up and changed to ordinary windowed 1600x900 for verification. Normal
+profile settings were untouched. Editor/mod checks are deferred to Javelin
+development at the user's request.
+
+Both frozen executable probes passed. The published v0.4.1 ZIP and installed
+binaries were hash verified on the actual PC. Existing configuration/token
+were preserved, and Start menu plus enabled Codex MCP point to v0.4.1.
+The installed default Connection page was visually inspected after correcting
+text wrapping. Remaining desktop checks are paused while the user is using
+the game. No editor visibility or MCP toggle success is inferred from status.
+
+The implementation CI run passed all four Windows/Linux Python 3.11/3.12 jobs:
+https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39097207057
 
 The user-supplied 42.20.4 archive was inspected for unsafe paths/links, extracted
 into separate staging and moved into place only after executable validation.
 The previous game installation was retained as a separate backup. Normal saves,
 mods and the existing isolated profile were outside the game-directory swap.
-Runtime build and live operation acceptance are recorded after launch.
+Native startup and the main menu confirm **42.20.4 b0bbce05d5**. The existing
+profile's loaded world produced an actual heartbeat with `ready=true`,
+`debug=true`, `single_player=true`, `player_loaded=true`, `god_mode=true`,
+`operations_available=true` and `lua_execution_available=false`. This verifies
+connection and actual startup god-mode state on the target build. MCP toggles
+and visibly opened editors are recorded as they complete.
 
 The final local suite passed **187 tests**, including 29 Windows GUI tests.
 A fresh independent source review found no remaining required defects. Tests

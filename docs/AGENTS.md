@@ -11,6 +11,8 @@ acceptance checks. `skills.md` owns skill/framework provenance and usage evidenc
 build applicability, local corroboration, and unresolved compatibility gaps.
 `wiki-research.md` and `wiki-coverage.csv` own the four wiki passes and explicit
 page review depths. `validation.md` owns measured implementation/startup evidence.
+`windows-release.md` owns candidate provenance, signing prerequisites, scan
+evidence and the blocked-release recovery workflow.
 
 ## Local Contracts
 

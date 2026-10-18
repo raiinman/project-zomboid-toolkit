@@ -7,6 +7,8 @@
 </p>
 <p align="center"><a href="docs/design.md">Architecture</a> · <a href="docs/plan.md">Delivery plan</a> · <a href="docs/validation.md">Validation</a> · <a href="docs/skills.md">Skills</a> · <a href="AGENTS.md">Agent guidance</a></p>
 
+<p align="center"><strong>Windows distribution is under security review.</strong> Defender quarantined the v0.4.1 CLI. Do not restore it or add an exclusion. A clean, provenance-checked replacement is being prepared; no trusted signature or antivirus clearance is claimed yet.</p>
+
 Connect Codex or another MCP client to your running Project Zomboid debug world.
 Use the desktop app to connect, change god mode, open built-in debug editors and
 read logs. **You do not need to create a mod, choose project folders or save a
@@ -15,8 +17,9 @@ menu remains responsible for enabling mods.
 
 ## Open and connect
 
-Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.4.0/pz-windows.zip),
-extract it and open **PZToolkit.exe**. Installed copies also have a Start menu
+Windows downloads are currently withheld pending the review above. The next
+candidate uses a complete application bundle, including support files.
+Installed copies have a Start menu
 entry under **Dead Signal Interactive**. No terminal or Python installation is
 needed to use the app.
 
@@ -118,11 +121,14 @@ not need either installed.
 uv sync --frozen --extra mcp --extra dev --python 3.11
 uv run --no-sync python -m pytest -q
 .\packaging\build.ps1
-uv run --no-sync python packaging/verify_exe.py dist/pz.exe
-uv run --no-sync python packaging/verify_gui.py dist/PZToolkit.exe
+./packaging/scan.ps1 -BundlePath dist/pz-windows -BuildReceipt dist/build-receipt.json -ReceiptPath dist/scan-receipt.json
+uv run --no-sync python packaging/verify_exe.py dist/pz-windows/pz/pz.exe dist/scan-receipt.json
+uv run --no-sync python packaging/verify_gui.py dist/pz-windows/PZToolkit/PZToolkit.exe dist/scan-receipt.json
 ```
 
-The build produces the GUI, CLI/MCP executable and Windows ZIP. Offline tests,
+Use clean Windows CI for candidate builds. See [Windows distribution](docs/windows-release.md)
+for the blocked release, provenance, trusted-signing prerequisite and scan gates.
+The build produces complete GUI/CLI application folders and a Windows ZIP. Offline tests,
 executable checks, rendered window review and real in-game acceptance are separate
 forms of evidence. Current results and outstanding live checks are recorded in
 [validation](docs/validation.md) and the [delivery plan](docs/plan.md).

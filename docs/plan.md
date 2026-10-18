@@ -26,11 +26,13 @@ measured test and runtime evidence.
 - [x] Offline inline transport creates no scenario or per-command report files.
 - [x] The final GUI has no mod manager, folder wizard or scenario-file workflow.
 - [x] Saved settings, token and existing isolated profile survive upgrade.
-- [ ] Startup debug/god mode are confirmed in a loaded native world.
-- [x] Final executable GUI, CLI and MCP checks pass for v0.4.0.
+- [x] Startup debug/god mode are confirmed in a loaded native world.
+- [x] Historical v0.4.1 executable probes passed before the Defender quarantine.
+- [ ] Clean v0.4.2 candidate passes provenance, Defender and executable gates.
+- [ ] A trusted signing identity is provisioned and actual signatures verify.
 - [ ] Final rendered default/minimum windows, help, errors and advanced controls are inspected.
 - [x] Installed app and Start menu entry are verified on the actual PC.
-- [ ] Actual game acceptance passes with captured build and connection evidence.
+- [ ] Editor/mod acceptance continues during Javelin development, deferred by user.
 
 Unchecked items are intentional evidence boundaries, not claims of failure.
 Source implementation or mocked transport alone cannot check off native GUI or

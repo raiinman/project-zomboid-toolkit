@@ -1,6 +1,6 @@
 # Project Zomboid Toolkit for Windows
 
-Open **PZToolkit.exe**, or find **Project Zomboid Toolkit** in the Start menu
+Open **PZToolkit/PZToolkit.exe**, or find **Project Zomboid Toolkit** in the Start menu
 under **Dead Signal Interactive**. No terminal or Python installation is needed.
 
 This is a connection to the game for you and Codex. You do not need to make a
@@ -21,7 +21,10 @@ The existing separate test settings and saves are preserved; your normal saves
 are not moved or replaced. Restart an existing game session to load an updated
 bridge helper.
 
-For Codex or another MCP client, set the executable to the installed **pz.exe**
+Keep both complete application folders, including their `_internal` support
+directories. Copying an EXE alone does not install this version.
+
+For Codex or another MCP client, set the executable to the installed **pz/pz.exe**
 and arguments to `["serve"]`. The app and MCP use the same saved connection at
 `%LOCALAPPDATA%/PZToolkit/config.json`. An explicit `--config` is available for
 existing integrations, but normal use needs no folder wizard.

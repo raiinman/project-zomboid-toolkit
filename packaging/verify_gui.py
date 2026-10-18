@@ -6,9 +6,11 @@ import struct
 import subprocess
 import sys
 import tempfile
+from require_scan import assert_scanned
 
 
 executable = Path(sys.argv[1]).resolve()
+assert_scanned(executable, sys.argv[2])
 image = executable.read_bytes()
 pe_offset = struct.unpack_from("<I", image, 0x3C)[0]
 assert image[:2] == b"MZ" and image[pe_offset:pe_offset + 4] == b"PE\0\0"

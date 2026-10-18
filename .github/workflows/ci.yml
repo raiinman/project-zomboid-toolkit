@@ -12,7 +12,7 @@ jobs:
   offline-contracts:
     name: Offline contracts (${{ matrix.os }}, Python ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -41,11 +41,38 @@ jobs:
         if: matrix.os == 'windows-latest' && matrix.python == '3.11'
         shell: pwsh
         run: ./packaging/build.ps1
+      - name: Scan exact candidate bundle before executable checks
+        id: defender
+        if: matrix.os == 'windows-latest' && matrix.python == '3.11'
+        shell: pwsh
+        run: ./packaging/scan.ps1 -BundlePath dist/pz-windows -BuildReceipt dist/build-receipt.json -ReceiptPath dist/scan-receipt.json
       - name: Verify executable CLI, assets and MCP protocol
         if: matrix.os == 'windows-latest' && matrix.python == '3.11'
-        run: uv run --no-sync python packaging/verify_exe.py dist/pz.exe
+        run: uv run --no-sync python packaging/verify_exe.py dist/pz-windows/pz/pz.exe dist/scan-receipt.json
       - name: Verify windowed app and bundled bridge
         if: matrix.os == 'windows-latest' && matrix.python == '3.11'
-        run: uv run --no-sync python packaging/verify_gui.py dist/PZToolkit.exe
+        run: uv run --no-sync python packaging/verify_gui.py dist/pz-windows/PZToolkit/PZToolkit.exe dist/scan-receipt.json
+      - name: Retain candidate provenance and scan diagnostics
+        if: always() && matrix.os == 'windows-latest' && matrix.python == '3.11'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-build-diagnostics-${{ github.sha }}
+          path: |
+            dist/build-receipt.json
+            dist/scan-receipt.json
+            dist/native-inputs.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Retain scanned Windows candidate
+        if: success() && steps.defender.outcome == 'success' && matrix.os == 'windows-latest' && matrix.python == '3.11'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-candidate-${{ github.sha }}
+          path: |
+            dist/pz-windows.zip
+            dist/build-receipt.json
+            dist/scan-receipt.json
+          if-no-files-found: error
+          retention-days: 14
       # Live gameplay requires the user's installed game and an isolated debug
       # profile. Simulated transport tests do not constitute live acceptance.

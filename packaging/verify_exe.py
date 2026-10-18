@@ -9,10 +9,12 @@ import tempfile
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from require_scan import assert_scanned
 
 
 def main():
     executable = Path(sys.argv[1]).resolve()
+    assert_scanned(executable, sys.argv[2])
     with tempfile.TemporaryDirectory(prefix="pz-exe-") as directory:
         root = Path(directory)
         config = root / "config.json"

@@ -30,7 +30,7 @@ edits that preserve contracts may leave docs unchanged after this pass.
 
 ## Hierarchy
 
-- The root owns project rules, packaging, README, licensing, and global workflow.
+- The root owns project rules, release policy, README, licensing and global workflow.
 - Children own domain rules and index their direct children.
 - Create a child at durable boundaries with distinct responsibilities or checks.
 - Child section order: Purpose, Ownership, Local Contracts, Work Guidance,
@@ -52,6 +52,11 @@ edits that preserve contracts may leave docs unchanged after this pass.
   real game verification separately. A timeout is not a passing scenario.
 - Keep tokens, local game files, saves, logs, and machine configuration out of Git.
 - Before implementing public SDK/library calls, use current Context7 docs.
+- Build Windows candidates in clean CI, reject unexpected native dependency
+  origins and scan the exact bundle before executable verification or delivery.
+  Never restore quarantined builds, add antivirus exclusions or assert a false
+  positive without evidence. Trusted signing requires a validated signing
+  identity; unsigned candidates must remain explicitly labeled.
 
 ## User Preferences
 
@@ -81,6 +86,9 @@ edits that preserve contracts may leave docs unchanged after this pass.
 - Subagents are authorized. Coordinate ownership before concurrent edits.
 - Treat user input during work as steering while preserving the active goal.
 - Keep progress concise, state outcomes and one next step, and use no em dashes.
+- Editor visibility and mod integration testing continue during Javelin work.
+  Do not require a separate editor/mod acceptance pass for the current cursor
+  and god-mode fix, and do not label deferred checks as passed.
 
 ## README Presentation
 
@@ -102,15 +110,15 @@ visible. Decorative artwork is optional; its presence never implies validation.
 | `src/pztoolkit/AGENTS.md` | Shared tools, desktop/CLI/MCP adapters, harness, bundled assets |
 | `tests/AGENTS.md` | Offline verification and integration test evidence |
 | `docs/AGENTS.md` | Design, plan, provenance, operating instructions |
+| `packaging/AGENTS.md` | Windows builds, provenance, signing and scan gates |
 
-The root also owns `.github/`, packaging, examples, and other unindexed paths.
+The root also owns `.github/`, examples and other unindexed paths.
 `PRODUCT.md` owns confirmed product/brand requirements. `DESIGN.md` owns the
 desktop visual contract; `docs/design.md` remains the architecture authority.
 `.impeccable/` holds the user's code-first design workflow and desktop brief;
 scratch work and local review captures are ignored by Git.
-`packaging/` owns the frozen GUI and console entry points, Windows build command
-and executable smoke tests. Bundle the required runtimes and bridge assets;
-verify the desktop window, CLI and MCP before delivery. Keep binaries in ignored
-`dist/`. The root owns native app packaging and ZIP delivery contracts.
+`packaging/AGENTS.md` owns build, provenance, signing, scan and executable-probe
+contracts. Keep binaries and machine-specific receipts in ignored `dist/`.
+The root owns release policy and installation evidence boundaries.
 `packaging/build.ps1 -OutputDirectory dist/<version>` can preserve an older
 running executable while building a new version; the default remains `dist`.

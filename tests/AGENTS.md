@@ -18,6 +18,8 @@ read bounds and preservation checks for internal and legacy discovery.
 Lua mocks also cover god-mode spawn/respawn/fallback, guarded startup, manual
 disablement and API failure reporting. Launch fixtures cover changed bridge
 refresh with backup/token preservation and no redeploy of unchanged scripts.
+`test_packaging.py` owns native-input origin and scan-receipt rejection fixtures.
+These tests do not execute candidate binaries or establish antivirus clearance.
 
 ## Local Contracts
 
