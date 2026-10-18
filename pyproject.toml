@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project-zomboid-toolkit"
+version = "0.1.0"
+description = "Shared MCP and CLI tools with a Project Zomboid mod testing harness"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.12.4,<2"]
+dev = ["pytest>=8,<10", "lupa>=2.6,<3"]
+
+[project.scripts]
+pz = "pztoolkit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pztoolkit = ["assets/bridge/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

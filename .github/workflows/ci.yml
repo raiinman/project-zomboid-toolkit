@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-contracts:
+    name: Offline contracts (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: '0.12.12'
+          enable-cache: true
+      - name: Verify lockfile matches package metadata
+        run: uv lock --check
+      - name: Install toolkit and test dependencies
+        run: uv sync --frozen --extra mcp --extra dev --python ${{ matrix.python }}
+      - name: Verify dependency compatibility
+        run: uv pip check
+      - name: Compile Python sources
+        run: uv run --no-sync python -m compileall -q src tests
+      - name: Run offline contracts and simulated Lua bridge
+        run: uv run --no-sync python -m pytest -q
+      # Live gameplay requires the user's installed game and an isolated debug
+      # profile. Simulated transport tests do not constitute live acceptance.
