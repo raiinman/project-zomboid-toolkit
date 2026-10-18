@@ -19,8 +19,15 @@ def main() -> int:
     inputs.add_argument("--args", default="{}", help="JSON object containing tool arguments")
     inputs.add_argument("--args-file", help="UTF-8 JSON argument file, avoiding shell quoting")
     commands.add_parser("serve", help="Run the MCP server over stdio")
+    commands.add_parser("detect", help="Detect setup folders before a configuration exists")
     args = parser.parse_args()
     try:
+        if args.command == "detect":
+            from .discovery import detect_folders
+            config = Path(args.config).resolve()
+            result = Toolkit(config).folders_detect() if config.exists() else detect_folders({}, config.parent)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            return 0
         toolkit = Toolkit(args.config)
         if args.command == "serve":
             from .server import serve

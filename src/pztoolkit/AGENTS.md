@@ -38,6 +38,10 @@ transport, and packaged Lua bridge assets.
   advances automatically only after the matching successful action. Bridge
   readiness requires `ready=true`; only a passing harness result completes it.
   Never execute tools merely by navigating the guide.
+- `discovery.py` owns bounded read-only folder detection. Reuse it in GUI,
+  shared `folders_detect` tool and configuration-free CLI `detect`. Scan Steam
+  library metadata and known locations, not whole drives. Never adopt normal
+  Zomboid saves as a test profile. GUI detection previews paths without saving.
 
 ## Work Guidance
 

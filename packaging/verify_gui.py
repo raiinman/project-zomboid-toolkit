@@ -28,5 +28,6 @@ with tempfile.TemporaryDirectory(prefix="pz-gui-exe-") as directory:
     assert evidence["tabs"] == ["Setup", "Mods", "In-game tests"]
     assert evidence["navigation"] == ["Mods", "In-game tests", "Setup"]
     assert evidence["guide_steps"] == 8
+    assert evidence["setup_controls_fit"], "Setup buttons must fit at minimum window size"
 
 print("Windowed executable, native widgets, background tool dispatch and bundled bridge passed")

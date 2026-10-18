@@ -26,7 +26,7 @@ def tk_root():
 def app(tmp_path, tk_root):
     root = tk.Toplevel(tk_root)
     root.withdraw()
-    application = Application(root, tmp_path / "config.json")
+    application = Application(root, tmp_path / "config.json", autodetect=False)
     for key, name in (("game_dir", "game"), ("workspace_dir", "workspace"), ("profile_dir", "profile")):
         application.paths[key].set(str(tmp_path / name))
     application.save_setup()
@@ -256,3 +256,55 @@ def test_new_theme_uses_no_green_controls(app):
             color = style.lookup(name, option)
             red, green, blue = (int(color[index:index + 2], 16) for index in (1, 3, 5))
             assert green <= max(red, blue), (name, option, color)
+
+
+def test_detect_folders_previews_without_saving_or_changing_workspace(app, monkeypatch, tmp_path):
+    import pztoolkit.gui as gui
+    before = app.config.read_bytes()
+    workspace = app.paths["workspace_dir"].get()
+    detected_game = str(tmp_path / "detected-game")
+
+    def detect(current, data_dir):
+        return {"suggested": {**current, "game_dir": detected_game}, "game_candidates": [], "notes": []}
+
+    monkeypatch.setattr(gui, "detect_folders", detect)
+    press(app, "Detect folders")
+    assert app.busy
+    wait(app)
+    assert app.paths["game_dir"].get() == detected_game
+    assert app.paths["workspace_dir"].get() == workspace
+    assert app.config.read_bytes() == before
+    assert "Review" in app.status.get()
+    assert not app.ready()
+
+
+def test_first_launch_detects_without_requiring_or_writing_config(tk_root, tmp_path, monkeypatch):
+    import pztoolkit.gui as gui
+    monkeypatch.setattr(gui, "detect_folders", lambda current, data_dir:
+                        {"suggested": {**current, "game_dir": str(tmp_path / "found")},
+                         "game_candidates": [], "notes": []})
+    root = tk.Toplevel(tk_root)
+    root.withdraw()
+    application = Application(root, tmp_path / "new-config.json")
+    try:
+        root.update()  # Run the first-launch idle handler.
+        wait(application)
+        assert application.paths["game_dir"].get() == str(tmp_path / "found")
+        assert not application.config.exists()
+        assert application.toolkit is None
+    finally:
+        application.close()
+
+
+def test_detection_error_leaves_existing_setup_intact(app, monkeypatch):
+    import pztoolkit.gui as gui
+    before = {key: value.get() for key, value in app.paths.items()}
+
+    def fail(current, data_dir):
+        raise OSError("Fixture read denied")
+
+    monkeypatch.setattr(gui, "detect_folders", fail)
+    press(app, "Detect folders")
+    assert "error" in wait(app)
+    assert {key: value.get() for key, value in app.paths.items()} == before
+    assert "Fixture read denied" in app.output.get("1.0", "end")

@@ -11,6 +11,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from .core import Toolkit, atomic_text, confined, linked
+from .discovery import detect_folders
 
 ASSETS = Path(__file__).parent / "assets/gui"
 INK = "#141416"
@@ -21,7 +22,7 @@ MUTED = "#bcb5bc"
 ACCENT = "#ef8b82"
 
 GUIDE = (
-    ("Setup", "Save setup", "save_setup", "Choose your folders", "Browse to your game installation, choose a mod workspace and a separate test profile, then save setup."),
+    ("Setup", "Save setup", "save_setup", "Choose your folders", "Use Detect folders or Browse, review your game installation, mod workspace and separate test profile, then save setup."),
     ("Setup", "Prepare test profile", "profile_prepare", "Prepare the isolated profile", "Install the toolkit bridge into the separate test profile. Your normal saves and mods stay outside it."),
     ("Mods", "Create mod", "mod_create", "Create a development mod", "Enter a new mod ID, then create it. A matching Lua smoke scenario is generated for you."),
     ("Mods", "Check selected", "mod_check", "Check your mod", "Select a mod in the list, then check its folder layout and metadata."),
@@ -37,7 +38,7 @@ def default_config() -> Path:
 
 
 class Application:
-    def __init__(self, root: tk.Tk, config: Path):
+    def __init__(self, root: tk.Tk, config: Path, *, autodetect=True):
         self.root, self.config = root, Path(config).resolve()
         self.toolkit = None
         self.saved_paths = {}
@@ -129,6 +130,8 @@ class Application:
         self.load_config(self.config)
         self.show_guide(0)
         self.poll_handle = root.after(80, self.poll)
+        if autodetect and not self.config.exists():
+            root.after_idle(self.detect_folders)
 
     def _style(self):
         self.display_family = "Segoe UI"
@@ -342,6 +345,7 @@ class Application:
                   style="Subtitle.TLabel").pack(anchor="w", pady=(10, 12))
         row = ttk.Frame(self.setup)
         row.pack(fill="x")
+        self.button(row, "Detect folders", self.detect_folders)
         self.button(row, "Save setup", self.save_setup, True)
         self.button(row, "Open config…", self.choose_config)
         self.button(row, "Check installation", lambda: self.dispatch("doctor"))
@@ -424,6 +428,22 @@ class Application:
         path = filedialog.askopenfilename(parent=self.root, title="Open toolkit configuration", filetypes=[("JSON", "*.json")])
         if path:
             self.load_config(Path(path))
+
+    def detect_folders(self):
+        current = {key: value.get().strip() for key, value in self.paths.items()}
+        data_dir = self.config.parent
+
+        def detected(result):
+            for key, value in result["suggested"].items():
+                if value:
+                    self.paths[key].set(value)
+            found = result["suggested"].get("game_dir")
+            self.display("Folders detected. Review the paths, then Save setup." if found else
+                         "Choose a game folder using Browse. See detection details below.", result,
+                         "info" if found else "warning")
+            self.tabs.select(self.setup)
+
+        self.start_job("folders_detect", lambda: detect_folders(current, data_dir), detected)
 
     def load_config(self, path):
         if not path.exists():
@@ -631,6 +651,11 @@ class Application:
         if self.busy or not self.ready():
             return
         toolkit, arguments = self.toolkit, arguments or {}
+        self.start_job(name, lambda: toolkit.call(name, arguments), callback)
+
+    def start_job(self, name, operation, callback=None):
+        if self.busy:
+            return
         self.busy = True
         self.last_result = None
         for button in self.actions:
@@ -649,7 +674,7 @@ class Application:
 
         def worker():
             try:
-                self.jobs.put((name, toolkit.call(name, arguments), None, callback))
+                self.jobs.put((name, operation(), None, callback))
             except Exception as exc:
                 self.jobs.put((name, None, str(exc) or type(exc).__name__, None))
         threading.Thread(target=worker, daemon=True).start()
@@ -731,6 +756,7 @@ def main():
         # Build verification exercises the real window and bundled assets, not a game.
         import time
 
+        root.geometry("1100x860")
         started = time.monotonic()
 
         def verify():
@@ -740,11 +766,18 @@ def main():
             bridge = app.toolkit.profile / "mods/PZToolkitBridge" if app.toolkit else None
             assets = bool(bridge and (bridge / "42/media/lua/client/PZToolkitBridge.lua").is_file()
                           and (bridge / "common/README.txt").is_file())
+            setup_buttons = [button for button in app.actions if str(button).startswith(str(app.setup) + ".")]
+            controls_fit = all(button.winfo_ismapped()
+                               and app.setup.winfo_rootx() <= button.winfo_rootx()
+                               and button.winfo_rootx() + button.winfo_width() <= app.setup.winfo_rootx() + app.setup.winfo_width()
+                               and button.winfo_rooty() + button.winfo_height() <= app.setup.winfo_rooty() + app.setup.winfo_height()
+                               for button in setup_buttons)
             result = {"ok": bool(not app.busy and app.last_result and app.last_result.get("ok") and assets),
                       "window_mapped": bool(root.winfo_ismapped()), "bridge_assets": assets,
                       "branding_loaded": app.header_logo.width() > 0,
                       "display_font": app.display_family,
                       "navigation": list(app.navigation), "guide_steps": len(GUIDE),
+                      "setup_controls_fit": controls_fit,
                       "tabs": [app.tabs.tab(page, "text") for page in app.tabs.tabs()]}
             atomic_text(arguments.smoke_report, json.dumps(result))
             root.after_cancel(app.poll_handle)

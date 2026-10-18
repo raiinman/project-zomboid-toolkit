@@ -60,6 +60,8 @@ edits that preserve contracts may leave docs unchanged after this pass.
   of the interface and preserve clear native controls and evidence boundaries.
 - Provide an optional eight-step guide with arrows pointing to the next control.
   Navigation through the guide must never imply that an operation succeeded.
+- Detect game folders on first setup and offer Detect folders for later scans.
+  Preserve saved workspace/profile choices; preview changes before Save setup.
 - Continue authorized implementation and routine maintenance autonomously.
 - Subagents are authorized. Coordinate ownership before concurrent edits.
 - Treat user input during work as steering while preserving the active goal.

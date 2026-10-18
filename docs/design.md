@@ -34,6 +34,13 @@ Build order: shared-tools, then mod-development and adapters, then game-harness.
 The architecture stays extensible through additional tool registrations rather
 than premature implementations of roadmap modules.
 
+Folder detection is a read-only shared capability. `discovery.py` checks bounded
+Steam library indexes and known install locations, validates game markers and
+lists ambiguous installs. GUI first setup and Detect folders preview its result
+without changing saved configuration. CLI `detect` works before config exists;
+configured CLI/MCP calls expose the same implementation as `folders_detect`.
+Preserve workspace/profile choices and keep normal Zomboid saves outside defaults.
+
 ## Accepted decisions
 
 1. **Python core, thin adapters.** One registry owns tool names, descriptions,

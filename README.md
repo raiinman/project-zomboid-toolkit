@@ -8,7 +8,7 @@
 <p align="center"><a href="docs/design.md">Design</a> · <a href="docs/plan.md">Delivery plan</a> · <a href="docs/skills.md">Skills and provenance</a> · <a href="AGENTS.md">Agent guidance</a></p>
 
 The first milestone supports **mod development**. One Python registry defines all
-11 tools, their JSON input schemas, validation, and execution. The CLI and MCP
+12 tools, their JSON input schemas, validation, and execution. The CLI and MCP
 server consume that registry. A companion Lua mod receives scenarios inside a
 running debug single-player game and returns assertion results.
 
@@ -16,11 +16,12 @@ Server administration and gameplay automation remain later milestones.
 
 ## Setup
 
-Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.3.0/pz-windows.zip),
+Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.3.1/pz-windows.zip),
 extract it, and double-click **PZToolkit.exe**. It opens a proper desktop window;
 no terminal or Python installation is needed.
 
-1. **Setup:** choose your game, workspace and isolated test profile. Save setup,
+1. **Setup:** use automatic detection or **Detect folders**, review your game,
+   workspace and isolated test profile. Save setup,
    then prepare the test profile.
 2. **Mods:** create a mod, select it, check it and deploy it. Open its folder to
    edit the mod sources with your preferred editor.
@@ -124,6 +125,7 @@ It uses the official Python MCP SDK 1.x, pinned by `uv.lock`.
 | Tool | Purpose |
 | --- | --- |
 | `doctor` | Inspect configuration and installation |
+| `folders_detect` | Find verified game installs and preview setup folders without saving |
 | `source_search`, `source_read` | Search/read installed Lua and script text |
 | `mod_create`, `mod_check` | Scaffold and check Build 42 mod metadata/layout |
 | `profile_prepare` | Prepare an isolated profile and bridge |

@@ -23,7 +23,7 @@ OWNER = "pztoolkit-v1"
 TOOL_NAMES = (
     "doctor", "mod_create", "mod_check", "mod_deploy", "source_search",
     "source_read", "profile_prepare", "game_launch", "logs_read", "bridge_status",
-    "harness_run",
+    "harness_run", "folders_detect",
 )
 
 
@@ -133,6 +133,12 @@ class Toolkit:
             if not valid or (expected is float and not math.isfinite(value)):
                 raise ValueError(f"Invalid type or value for {key}: expected {expected.__name__}")
         return fn(**arguments)
+
+    def folders_detect(self) -> dict:
+        """Find installed game folders and suggest setup paths without writing files."""
+        from .discovery import detect_folders
+        return detect_folders({"game_dir": str(self.game), "workspace_dir": str(self.workspace),
+                               "profile_dir": str(self.profile)}, self.config_path.parent)
 
     def doctor(self) -> dict:
         """Inspect configured paths and installed build without modifying them."""

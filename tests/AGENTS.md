@@ -9,6 +9,9 @@ Offline unit/integration tests, fixtures, and protocol parity checks.
 simulated bridge responses, including responsive waits and workspace switching.
 It also verifies sidebar navigation, guide arrows, successful-action advancement,
 completion and failure gating, readable contrast and the no-green control palette.
+`test_discovery.py` owns fixture-based Steam/common-folder detection, ambiguity,
+read bounds and preservation checks. GUI tests cover first-launch detection,
+preview-only settings and visible discovery failures.
 
 ## Local Contracts
 

@@ -10,7 +10,8 @@ opens the relevant page; **Previous** and **Next** revisit instructions without
 running actions. Successful actions advance the matching step. Resize the
 activity/results dock by dragging its divider when you need more output space.
 
-1. In **Setup**, choose your game installation, mod workspace and a new isolated
+1. In **Setup**, use first-launch detection or **Detect folders**, then review
+   your game installation, mod workspace and a new isolated
    test profile. Choose **Save setup**, then **Prepare test profile**.
 2. In **Mods**, enter a mod ID, choose **Create mod**, then select it and choose
    **Check selected** and **Deploy to test profile**. **Open mod folder** opens
@@ -24,6 +25,9 @@ activity/results dock by dragging its divider when you need more output space.
    the captured evidence.
 
 App settings are stored in `%LOCALAPPDATA%/PZToolkit/config.json` by default.
+Detection checks Steam library metadata and common installation folders. Existing
+workspace/profile choices are retained. Multiple installs are listed in results
+for manual selection with Browse. Nothing is saved until **Save setup**.
 Use **Open config** to share an existing CLI/MCP configuration. The active
 settings file is shown in Setup. Keep the isolated profile outside normal
 Zomboid saves and mods. Relative folders resolve beside the configuration file.

@@ -16,6 +16,11 @@ def main():
     with tempfile.TemporaryDirectory(prefix="pz-exe-") as directory:
         root = Path(directory)
         config = root / "config.json"
+        detection = subprocess.run([str(executable), "--config", str(config), "detect"],
+                                   cwd=root, capture_output=True, text=True, timeout=60)
+        assert detection.returncode == 0, detection.stderr
+        assert "game_candidates" in json.loads(detection.stdout)
+        assert not config.exists(), "Detection must not write settings"
         config.write_text(json.dumps({"game_dir": str(root / "game"),
                                      "profile_dir": str(root / "profile"),
                                      "workspace_dir": str(root / "workspace")}), encoding="utf-8")
@@ -27,7 +32,8 @@ def main():
             return json.loads(result.stdout)
 
         schemas = call("tools")
-        assert len(schemas) == 11
+        assert len(schemas) == 12
+        assert any(tool["name"] == "folders_detect" for tool in schemas)
         call("call", "profile_prepare")
         doctor = call("call", "doctor")
         bridge = root / "profile/mods/PZToolkitBridge"

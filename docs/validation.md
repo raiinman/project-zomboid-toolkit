@@ -5,7 +5,8 @@ implementation, separately from the research findings.
 
 | Check | Result |
 | --- | --- |
-| Full offline suite | 89 tests passed on local Windows, Python 3.11, including 16 native GUI tests for guide arrows, success/failure completion, readiness gating, contrast and result-tone reset. The 16 GUI tests passed again after the minimum-size footer fix |
+| Full offline suite | 107 tests passed on local Windows, Python 3.11, including 19 native GUI tests and 15 read-only discovery tests. Guide arrows, success/failure completion, readiness gating, contrast, first-launch detection, preview-only configuration and error handling are covered |
+| Folder discovery | Actual read-only detection found the installed game in its common install location. Fixture tests cover secondary Steam libraries, multiple installs, retained settings, malformed/inaccessible metadata, read bounds and normal-profile default rejection |
 | MCP connection | Actual stdio handshake, discovery, schema parity and invocation passed |
 | Boundary cases | Invalid inputs, ownership collisions, traversal and Windows junction regressions passed |
 | Harness transport | Correlation, stale responses, failure, malformed result, timeout, lock cleanup and reports passed |

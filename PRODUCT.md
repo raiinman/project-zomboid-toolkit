@@ -15,6 +15,8 @@ The same tools must remain available through CLI and MCP.
 ## Capabilities and Constraints
 
 - Configure isolated game profiles and development workspaces.
+- Detect game installs on first setup or with Detect folders. Preview paths,
+  retain existing workspace/profile choices and require Save setup to persist.
 - Create, check and deploy development mods; edit and run trusted Lua scenarios.
 - Present bridge readiness, game logs and retained reports in the app.
 - Preserve existing installations, normal saves, mods, source contracts and
