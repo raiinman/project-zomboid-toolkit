@@ -54,6 +54,9 @@ edits that preserve contracts may leave docs unchanged after this pass.
 - Before implementing public SDK/library calls, use current Context7 docs.
 - Build Windows candidates in clean CI, reject unexpected native dependency
   origins and scan the exact bundle before executable verification or delivery.
+  Private unscanned staging may transfer an otherwise clean build for the same
+  scan gate on the user's PC when CI Defender is unavailable, without approving
+  execution or installation or changing the failed CI result.
   Never restore quarantined builds, add antivirus exclusions or assert a false
   positive without evidence. Trusted signing requires a validated signing
   identity; unsigned candidates must remain explicitly labeled.
@@ -83,6 +86,9 @@ edits that preserve contracts may leave docs unchanged after this pass.
 - Reuse saved connection settings. If absent, detect the game internally and
   initialize only the app-owned connection defaults, without a folder wizard.
 - Continue authorized implementation and routine maintenance autonomously.
+- Complete build, security scan, installation and MCP maintenance through command
+  tools without desktop input, mouse control, window activation or GUI launch
+  while the user is using the PC.
 - Subagents are authorized. Coordinate ownership before concurrent edits.
 - Treat user input during work as steering while preserving the active goal.
 - Keep progress concise, state outcomes and one next step, and use no em dashes.

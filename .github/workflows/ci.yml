@@ -38,6 +38,7 @@ jobs:
       - name: Run offline contracts and simulated Lua bridge
         run: uv run --no-sync python -m pytest -q
       - name: Build standalone Windows executable
+        id: clean_build
         if: matrix.os == 'windows-latest' && matrix.python == '3.11'
         shell: pwsh
         run: ./packaging/build.ps1
@@ -63,6 +64,29 @@ jobs:
             dist/native-inputs.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Identify unavailable-runner scan for private security staging
+        id: security_staging
+        if: always() && github.event.repository.private == true && steps.clean_build.outcome == 'success' && steps.defender.outcome == 'failure' && matrix.os == 'windows-latest' && matrix.python == '3.11'
+        shell: pwsh
+        run: |
+          $receipt = Get-Content -LiteralPath dist/scan-receipt.json -Raw | ConvertFrom-Json
+          $unavailable = $receipt.schema -eq 1 -and
+            $receipt.ok -eq $false -and $receipt.executionApproved -eq $false -and
+            $receipt.error -eq 'Defender must be active in Normal mode with current signatures; scan verdict is unknown' -and
+            !$receipt.scans -and $null -eq $receipt.scanExitCode -and !$receipt.newDetections
+          if ($unavailable) { 'eligible=true' >> $env:GITHUB_OUTPUT }
+      - name: Retain UNSCANNED private staging for PC Defender scan only
+        if: always() && steps.security_staging.outputs.eligible == 'true' && github.event.repository.private == true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: UNSCANNED-security-staging-${{ github.sha }}
+          path: |
+            dist/pz-windows.zip
+            dist/build-receipt.json
+            dist/native-inputs.json
+            dist/scan-receipt.json
+          if-no-files-found: error
+          retention-days: 2
       - name: Retain scanned Windows candidate
         if: success() && steps.defender.outcome == 'success' && matrix.os == 'windows-latest' && matrix.python == '3.11'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

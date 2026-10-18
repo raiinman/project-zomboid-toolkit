@@ -24,9 +24,20 @@ bundle hashes and a receipt no older than 24 hours before launching anything.
 Receipts and scan logs contain local paths; keep them in ignored build output
 and restricted CI diagnostics, outside the distributed ZIP and public commits.
 
-Upload binary candidate artifacts only after these gates. Failures may upload
-receipts/logs for review, never the failed binaries. A passing scan is a
-point-in-time observation, not proof that a previous detection was false.
+Delivery artifacts and executable probes require all these gates. Failures may
+retain receipts/logs for review. A private-repository exception retains the clean
+ZIP and receipts as `UNSCANNED-security-staging-<commit>` for two days only when
+the runner fails the active/current Defender prerequisite before scanning. Other
+failures, including detections, are ineligible. This staging upload does not
+approve execution, installation or release, and the CI job remains failed.
+
+Download staging only to app-owned storage on the user's PC, verify its build
+hashes and run the same ordinary Defender gate against the exact extracted bundle
+and ZIP using PowerShell 7. Only a fresh successful PC scan permits executable
+checks and installation. Keep the failed runner receipt as diagnostics and create
+a separate PC receipt. Never turn a missing scanner into a passing check. A
+passing scan is a point-in-time observation, not proof that a previous detection
+was false.
 
 Signing is separately optional. No signing identity is currently provisioned.
 An unsigned candidate must remain labelled unsigned. To sign after acquiring

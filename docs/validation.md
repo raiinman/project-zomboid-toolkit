@@ -7,6 +7,14 @@ gates passed independent source review. The full local suite passed **206
 tests**, including 19 packaging fixtures. No candidate executable was run
 locally. Actual clean CI scanning and frozen probes remain pending.
 
+CI run `39098858667` passed the clean Windows build and native-origin gate,
+but stopped before scanning because the runner lacked active/current Defender
+protection. It produced no antivirus verdict and ran no candidate executable.
+The PC has active, current Defender in Normal mode. A harmless text-file scan
+confirmed scanner permission and correlated custom-scan events; this does not
+clear an application candidate. Offline regression fixtures now cover Defender's
+`file:_` resource format, delayed publication and unrelated quick-scan events.
+
 The user confirmed no signing identity exists. Candidates remain unsigned;
 trusted publisher signing cannot be completed without external enrollment.
 The blocked v0.4.1 release has a visible security-review warning.

@@ -19,6 +19,9 @@ Lua mocks also cover god-mode spawn/respawn/fallback, guarded startup, manual
 disablement and API failure reporting. Launch fixtures cover changed bridge
 refresh with backup/token preservation and no redeploy of unchanged scripts.
 `test_packaging.py` owns native-input origin and scan-receipt rejection fixtures.
+Its PowerShell event fixtures extract only scan-correlation functions, mock log
+records and waits, and verify exact raw/tagged paths, delayed publication and
+missing, unrelated, multiple-resource, mismatched-ID and cancelled scan events.
 These tests do not execute candidate binaries or establish antivirus clearance.
 
 ## Local Contracts
@@ -37,6 +40,7 @@ Prefer observable behavior and small fixtures over implementation mirrors.
 
 Use the repository's pytest suite. Report live game tests separately.
 GUI widget tests run on Windows and are skipped on other CI platforms.
+PowerShell correlation fixtures are skipped when `pwsh` is unavailable.
 
 ## Child DOX Index
 

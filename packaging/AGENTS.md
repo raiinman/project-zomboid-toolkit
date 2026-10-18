@@ -24,6 +24,11 @@ trusted signing, Defender scan gate and frozen application smoke checks.
   exclusions, upload private files or run a blocked artifact to make a check pass.
 - Build/scan receipts contain local paths and belong in ignored `dist/`, not Git
   or the public application ZIP. A passing scan is evidence at one time only.
+- Private CI may retain `UNSCANNED-security-staging-<commit>` for two days only
+  after a successful clean build and the active/current Defender prerequisite
+  fails before any scan. This is scan-only staging, never execution or delivery
+  approval. Other failures are ineligible; CI stays failed. Require the same
+  exact-bundle and ZIP scan gate on the user's PC before execution or installation.
 
 ## Work Guidance
 

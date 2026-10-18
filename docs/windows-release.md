@@ -26,6 +26,14 @@ of malware or a confirmed explanation for the detection.
    ordinary scan there. A clean result is evidence for those bytes at that time,
    not a guarantee against later detections.
 
+If clean CI cannot meet the active/current Defender prerequisite before scanning,
+the private workflow may retain a two-day `UNSCANNED-security-staging-<commit>`
+artifact for scanning on the user's PC. CI remains failed, executable probes stay
+blocked, and no release or installation is approved by this artifact. Other scan
+failures are ineligible. The same exact-bundle and ZIP gate must pass on the PC
+before execution or installation. Command-line maintenance must not control the
+mouse, activate windows or launch the GUI while the user is working.
+
 Do not upload private binaries or source to review services without explicit
 authorization. Microsoft accepts developer submissions for disputed detections;
 the affected old build stays blocked pending a determination.

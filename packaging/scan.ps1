@@ -50,10 +50,20 @@ function Get-DetectionKeys {
         "$($_.DetectionID)|$($_.ThreatID)|$($_.InitialDetectionTime.ToUniversalTime().ToString('o'))|$($_.LastThreatStatusChangeTime.ToUniversalTime().ToString('o'))"
     })
 }
+function Test-ScanResource([string]$Resource, [string]$Target) {
+    # Defender may wrap one file path in whitespace and its file:_ resource tag.
+    # Only a single exact path is acceptable, never a substring or resource list.
+    $value = $Resource.Trim()
+    if (!$value -or $value -match '[\r\n]') { return $false }
+    if ($value.StartsWith('file:_', [StringComparison]::OrdinalIgnoreCase)) {
+        $value = $value.Substring(6)
+    }
+    return $value.TrimEnd('\','/') -eq $Target.TrimEnd('\','/')
+}
 function Get-CompletedScan([long]$AfterRecord, [string]$Target) {
     $log = 'Microsoft-Windows-Windows Defender/Operational'
     $xpath = "*[System[(EventRecordID > $AfterRecord) and (EventID=1000 or EventID=1001 or EventID=1002 or EventID=1005)]]"
-    for ($attempt = 0; $attempt -lt 5; $attempt++) {
+    for ($attempt = 0; $attempt -lt 50; $attempt++) {
         try { $eventRecords = @(Get-WinEvent -LogName $log -FilterXPath $xpath -ErrorAction Stop) }
         catch {
             if ($_.FullyQualifiedErrorId -notlike 'NoMatchingEventsFound*') { throw }
@@ -67,7 +77,7 @@ function Get-CompletedScan([long]$AfterRecord, [string]$Target) {
         })
         $start = @($events | Where-Object {
             $_.event -eq 1000 -and $_.data['Scan ID'] -and
-            $_.data['Scan Resources'].Trim().TrimEnd('\','/') -eq $Target.TrimEnd('\','/')
+            (Test-ScanResource ([string]$_.data['Scan Resources']) $Target)
         } | Sort-Object record -Descending | Select-Object -First 1)
         if ($start.Count) {
             $scanId = $start[0].data['Scan ID']
@@ -81,7 +91,7 @@ function Get-CompletedScan([long]$AfterRecord, [string]$Target) {
     throw 'Cannot correlate Defender scan-start and scan-complete events for the exact target; verdict unknown'
 }
 try {
-    $bundle = [IO.Path]::GetFullPath($BundlePath)
+    $bundle = (Resolve-Path -LiteralPath $BundlePath -ErrorAction Stop).ProviderPath
     $receipt = Get-Content -LiteralPath $BuildReceipt -Raw | ConvertFrom-Json
     if ($receipt.schema -ne 1 -or !$receipt.files) { throw 'Unknown or empty build receipt' }
     $expected = @{}
@@ -113,11 +123,11 @@ try {
         if (!$lastEvent) { throw 'Defender operational event log unavailable' }
         $scanOutput += & $scannerPath -Scan -ScanType 3 -File $target 2>&1
         $scanExit = $LASTEXITCODE
+        $report.scanExitCode = $scanExit
         if ($scanExit -ne 0) { break }
         $report.scans += Get-CompletedScan $lastEvent.RecordId $target
     }
     $scanOutput | Out-String | Set-Content -LiteralPath "$ReceiptPath.log" -Encoding utf8
-    $report.scanExitCode = $scanExit
     if ($scanExit -ne 0) { throw "Defender scan did not return a clean completion (exit $scanExit)" }
     $detectionsAfter = @(Get-DetectionKeys)
     $newDetections = @($detectionsAfter | Where-Object { $_ -notin $detectionsBefore })

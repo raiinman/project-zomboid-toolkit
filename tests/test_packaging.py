@@ -5,6 +5,8 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import zipfile
 
 import pytest
@@ -159,3 +161,92 @@ def test_scan_receipt_rejects_archive_member_drift_even_with_updated_zip_hash(tm
     receipt.write_text(json.dumps(report))
     with pytest.raises(ValueError, match="ZIP"):
         scan.assert_scanned(exe, receipt)
+
+
+@pytest.mark.parametrize("case,accepted", [
+    ("raw", True), ("tagged", True), ("missing_unrelated", True),
+    ("delayed", True), ("different", False), ("multiple", False),
+    ("cancelled", False), ("mismatched_id", False), ("missing", False),
+])
+def test_defender_event_correlation_offline(tmp_path, case, accepted):
+    """Extract only the correlation functions, mock logs, never run the scanner."""
+    pwsh = shutil.which("pwsh")
+    if not pwsh:
+        pytest.skip("PowerShell 7 is unavailable for offline event fixtures")
+    fixture = tmp_path / "events.ps1"
+    fixture.write_text(r'''
+param([string]$ScanScript, [string]$Case)
+$ErrorActionPreference = 'Stop'
+$tokens = $null
+$errors = $null
+$ast = [Management.Automation.Language.Parser]::ParseFile($ScanScript, [ref]$tokens, [ref]$errors)
+if ($errors.Count) { throw 'Scan script parse failure' }
+$wanted = @('Test-ScanResource', 'Get-CompletedScan')
+$functions = @($ast.FindAll({param($node)
+    $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -in $wanted
+}, $false))
+if ($functions.Count -ne 2) { throw 'Expected only correlation functions' }
+foreach ($function in $functions) { . ([scriptblock]::Create($function.Extent.Text)) }
+$script:Target = 'C:\fixture\bundle'
+$resource = $script:Target
+switch ($Case) {
+    'tagged' { $resource = "`nfile:_$script:Target`n" }
+    'different' { $resource = 'file:_C:\fixture\bundle-other' }
+    'multiple' { $resource = "file:_$script:Target`nfile:_C:\other" }
+    'missing' { $resource = $null }
+}
+function New-Event([int]$Id, [long]$Record, [string]$ScanId, $Resource) {
+    $resourceField = if ($null -ne $Resource) {
+        '<Data Name="Scan Resources">' + [Security.SecurityElement]::Escape($Resource) + '</Data>'
+    } else { '' }
+    $rawXml = '<Event><EventData><Data Name="Scan ID">' + $ScanId + '</Data>' + $resourceField + '</EventData></Event>'
+    $event = [pscustomobject]@{Id=$Id; RecordId=$Record; RawXml=$rawXml}
+    $event | Add-Member -MemberType ScriptMethod -Name ToXml -Value {return $this.RawXml}
+    return $event
+}
+$script:Records = @((New-Event 1000 101 'our-scan' $resource))
+if ($Case -eq 'missing_unrelated') {
+    $script:Records += New-Event 1000 103 'unrelated-quick-scan' $null
+}
+$endId = if ($Case -eq 'mismatched_id') { 'different-scan' } else { 'our-scan' }
+$script:Records += New-Event 1001 102 $endId $null
+if ($Case -eq 'cancelled') { $script:Records += New-Event 1002 104 'our-scan' $null }
+$script:Calls = 0
+$script:Waits = 0
+function Get-WinEvent {
+    param($LogName, $FilterXPath, $ErrorAction)
+    if ($LogName -ne 'Microsoft-Windows-Windows Defender/Operational' -or
+        $FilterXPath -notmatch 'EventRecordID > 100') { throw 'Event boundary not requested' }
+    $script:Calls++
+    if ($Case -eq 'delayed' -and $script:Calls -lt 9) { return @() }
+    return $script:Records
+}
+function Start-Sleep {
+    param([int]$Milliseconds)
+    if ($Milliseconds -ne 200) { throw 'Unexpected wait interval' }
+    $script:Waits++
+}
+try {
+    $result = Get-CompletedScan 100 $script:Target
+    @{accepted=$true; result=$result; calls=$script:Calls; waits=$script:Waits} | ConvertTo-Json -Compress
+} catch {
+    @{accepted=$false; error=$_.Exception.Message; calls=$script:Calls; waits=$script:Waits} | ConvertTo-Json -Compress
+}
+''', encoding="utf-8")
+    result = subprocess.run([pwsh, "-NoProfile", "-NonInteractive", "-File", str(fixture),
+                             str(ROOT / "packaging/scan.ps1"), case],
+                            capture_output=True, text=True, timeout=30, check=True)
+    report = json.loads(result.stdout)
+    assert report["accepted"] is accepted, report
+    if accepted:
+        assert report["result"] == {"target": r"C:\fixture\bundle", "scanId": "our-scan",
+                                    "startRecord": 101, "endRecord": 102}
+        if case == "delayed":
+            assert report["calls"] == 9
+            assert report["waits"] == 8
+    elif case == "cancelled":
+        assert "cancelled or failed" in report["error"]
+    else:
+        assert "verdict unknown" in report["error"]
+        assert report["calls"] == 50
+        assert report["waits"] == 50
