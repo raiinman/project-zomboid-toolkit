@@ -5,6 +5,8 @@ Verify tool contracts and regression behavior independently of game ownership.
 ## Ownership
 
 Offline unit/integration tests, fixtures, and protocol parity checks.
+`test_gui.py` owns real Windows Tk widget flows with temporary workspaces and
+simulated bridge responses, including responsive waits and workspace switching.
 
 ## Local Contracts
 
@@ -21,6 +23,7 @@ Prefer observable behavior and small fixtures over implementation mirrors.
 ## Verification
 
 Use the repository's pytest suite. Report live game tests separately.
+GUI widget tests run on Windows and are skipped on other CI platforms.
 
 ## Child DOX Index
 

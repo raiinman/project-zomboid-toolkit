@@ -30,6 +30,8 @@ Documentation and DOX may proceed independently of executable implementation.
   readiness diagnostics; both multiplayer client and server contexts are refused.
 - [ ] Real game acceptance passes with a recorded game version.
 - [x] README, package install, relevant tests, and publishing checks pass.
+- [x] Native desktop workflow uses the shared registry for mod management and
+  scenario runs, with serialized background work and explicit configuration saves.
 
 Keep unchecked game acceptance visible when the executable cannot be launched or
 the bridge cannot be exercised. Publishing an initial repository does not imply

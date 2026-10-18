@@ -1,5 +1,5 @@
 <h1 align="center">Project Zomboid Toolkit</h1>
-<p align="center">Shared MCP and CLI tools, with an in-game Lua test harness.</p>
+<p align="center">Windows desktop app, MCP and CLI, with an in-game Lua test harness.</p>
 <p align="center">
   <img alt="Status: initial mod development implementation" src="https://img.shields.io/badge/status-initial_implementation-orange">
   <img alt="Target: Build 42" src="https://img.shields.io/badge/target-Build_42-green">
@@ -16,13 +16,32 @@ Server administration and gameplay automation remain later milestones.
 
 ## Setup
 
-Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.1.0/pz-windows.zip),
-extract it, and open PowerShell in the extracted folder.
+Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.2.0/pz-windows.zip),
+extract it, and double-click **PZToolkit.exe**. It opens a proper desktop window;
+no terminal or Python installation is needed.
 
-Use the standalone Windows **`pz.exe`**. It bundles its runtime, MCP dependencies
-and Lua bridge, so no Python installation or startup script is needed. Live
-testing requires your own Project Zomboid installation. The launcher targets
-Windows and Build 42. This is a console application; run commands in PowerShell.
+1. **Setup:** choose your game, workspace and isolated test profile. Save setup,
+   then prepare the test profile.
+2. **Mods:** create a mod, select it, check it and deploy it. Open its folder to
+   edit the mod sources with your preferred editor.
+3. **In-game tests:** launch the game, check bridge readiness, select and edit
+   a scenario, save it, then run it. Results, logs and reports are available in
+   the window. Enable the bridge and your mod in a loaded, unpaused disposable
+   single-player world first.
+
+The app saves its configuration in `%LOCALAPPDATA%/PZToolkit/config.json` by
+default. Setup shows the active file and can open an existing toolkit config.
+Unsaved settings must be saved before tool actions. One background action runs
+at a time, keeping the window responsive while the game returns a result.
+
+The desktop uses a distressed **Dead Signal Interactive** identity, a dark
+industrial horror palette and an empty abandoned-facility header. There are no
+creature figures in the artwork. The theme preserves native controls and literal
+test outcomes. Its visual contract is in [DESIGN.md](DESIGN.md).
+
+Live testing requires your own Project Zomboid installation. The launcher targets
+Windows and Build 42. **pz.exe** remains a separate console CLI and MCP server.
+The following commands are optional alternatives to using the app:
 
 ```powershell
 Copy-Item pztoolkit.example.json pztoolkit.local.json
@@ -124,10 +143,12 @@ for users of the executable. To build on Windows:
 ```powershell
 .\packaging\build.ps1
 uv run --no-sync python packaging/verify_exe.py dist/pz.exe
+uv run --no-sync python packaging/verify_gui.py dist/PZToolkit.exe
 ```
 
-The outputs are `dist/pz.exe` and `dist/pz-windows.zip` (executable, config
-template, examples and quickstart). Extract the ZIP before following Setup.
+The outputs are `dist/PZToolkit.exe` (desktop app), `dist/pz.exe` (CLI/MCP) and
+`dist/pz-windows.zip` (both executables, config template, examples and quickstart).
+Extract the ZIP before following Setup.
 Keep the configuration and scenario files outside
 the executable. Relative configuration paths resolve beside the config file;
 the default config is found in the current working directory. For source tests:
@@ -142,9 +163,11 @@ uv build
 
 Tests include actual MCP stdio discovery/invocation, filesystem containment,
 deployment ownership, stale response handling, and Lua 5.1 bridge mocks.
-The local suite passed 73 tests. Startup was checked against an isolated 42.20.0
+The local suite passed 85 tests, including native GUI flows and theme checks. Startup was checked against an isolated 42.20.0
 client; in-world bridge assertions remain pending. See the measured
 [validation record](docs/validation.md) and [delivery plan](docs/plan.md).
+The current theme's rendered finish review is pending after desktop control was
+stopped; source, asset and automated contrast checks are separate evidence.
 
 Four broad internet passes and four additional PZWiki passes informed the design:
 [research](docs/research.md), [wiki findings](docs/wiki-research.md), and

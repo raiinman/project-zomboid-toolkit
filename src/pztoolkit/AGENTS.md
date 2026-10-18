@@ -4,7 +4,7 @@ Implement shared Project Zomboid development tools and their adapters.
 
 ## Ownership
 
-This subtree owns Python tools, configuration, CLI/MCP presentation, harness
+This subtree owns Python tools, configuration, desktop/CLI/MCP presentation, harness
 transport, and packaged Lua bridge assets.
 
 ## Local Contracts
@@ -28,6 +28,11 @@ transport, and packaged Lua bridge assets.
 - Write machine-readable scenario evidence and distinguish game failure, timeout,
   malformed response, and successful assertions.
 - Keep MCP stdout reserved for protocol traffic.
+- `gui.py` is a native Tk adapter that dispatches through `Toolkit.call`. Keep
+  tool work on a serialized worker and widgets on the Tk thread. Block actions
+  with unsaved setup changes, preserve unsaved scenario edits across workspace
+  switches, and show errors and inconclusive timeouts in the window. Settings
+  default to `%LOCALAPPDATA%/PZToolkit/config.json`; writes still require Save.
 
 ## Work Guidance
 
@@ -41,4 +46,5 @@ API assumptions, launch flags, and mod activation for the installed game build.
 
 ## Child DOX Index
 
-No child DOX files currently exist. This file owns the entire package subtree.
+- `assets/gui/AGENTS.md`: studio artwork, typography, licenses and packaging.
+  This parent owns the GUI adapter, shared core, bridge and other package files.

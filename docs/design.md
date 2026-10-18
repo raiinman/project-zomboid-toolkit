@@ -26,6 +26,7 @@ need checks against the actual runtime, even within the same major build.
 | game-harness | Isolated launch, Lua bridge requests, evidence and log collection | mod-development | MVP |
 | cli | Tool discovery and JSON invocation for scripts | shared-tools | MVP |
 | mcp | stdio tools for AI clients | shared-tools | MVP |
+| desktop | Native mod management, scenario editing and in-game test controls | shared-tools | Windows app |
 | server-administration | Server configuration, lifecycle, logs and administration | shared-tools | Roadmap |
 | gameplay | Observe game state and execute character actions/scenarios | game-harness | Roadmap |
 
@@ -96,12 +97,24 @@ the heartbeat stale and prevent work from completing until the world resumes.
 `tests/` owns offline behavior checks. `docs/plan.md` owns delivery checkpoints.
 The root and child AGENTS.md hierarchy defines stable contribution contracts.
 
-Windows delivery uses a standalone console `pz.exe` with embedded Python, MCP
-dependencies and bridge data. CLI and MCP use that same binary (`serve` selects
-stdio MCP). `packaging/build.ps1` builds it and a ZIP with config/examples;
+Windows delivery uses a windowed `PZToolkit.exe` for the desktop workflow and a
+separate console `pz.exe` for CLI/MCP (`serve` selects stdio MCP). Both bundle
+their runtime and required bridge data. `packaging/build.ps1` builds both and a ZIP with config/examples;
 `packaging/verify_exe.py` exercises the frozen CLI, asset deployment and MCP
-protocol from a temporary directory. The frozen entry point resets the Windows
+protocol from a temporary directory. `packaging/verify_gui.py` checks the GUI PE
+subsystem, actual mapped Tk window, page controls, background dispatch and bundled
+bridge deployment. The frozen entry points reset the Windows
 DLL directory so external game processes inherit normal DLL lookup paths.
+
+The native Tk adapter has Setup, Mods and In-game tests tabs. Configuration is
+saved explicitly, defaulting to `%LOCALAPPDATA%/PZToolkit/config.json`; an existing
+CLI/MCP config can be opened in the app. GUI actions use `Toolkit.call`, with one
+worker at a time and queue-delivered results on the UI thread. Unsaved settings
+block tool actions. Workspace switching resolves edited scenarios before changing
+roots. The scenario editor enforces the core size/containment limits, requires
+Save before Run and an explicit trust checkbox. Failed assertions, setup errors,
+missing bridge heartbeats and inconclusive timeouts have distinct feedback.
+Closing while a job is active waits for completion; it cannot cancel game Lua.
 
 Create a Python environment, install the package with development extras, and run
 `python -m pytest`. Use the installed CLI's `--help` and tool listing as the source

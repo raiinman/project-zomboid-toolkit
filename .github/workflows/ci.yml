@@ -44,5 +44,8 @@ jobs:
       - name: Verify executable CLI, assets and MCP protocol
         if: matrix.os == 'windows-latest' && matrix.python == '3.11'
         run: uv run --no-sync python packaging/verify_exe.py dist/pz.exe
+      - name: Verify windowed app and bundled bridge
+        if: matrix.os == 'windows-latest' && matrix.python == '3.11'
+        run: uv run --no-sync python packaging/verify_gui.py dist/PZToolkit.exe
       # Live gameplay requires the user's installed game and an isolated debug
       # profile. Simulated transport tests do not constitute live acceptance.

@@ -320,7 +320,8 @@ class Toolkit:
                 # Windows signal 0 is CTRL_C_EVENT, not a process-existence probe.
                 try:
                     listing = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
-                                             capture_output=True, text=True, check=True, timeout=10)
+                                             capture_output=True, text=True, check=True, timeout=10,
+                                             creationflags=subprocess.CREATE_NO_WINDOW)
                 except subprocess.SubprocessError as exc:
                     raise ValueError("Could not inspect the tracked game process") from exc
                 running = any(len(row) > 1 and row[1] == str(pid) and

@@ -51,7 +51,11 @@ edits that preserve contracts may leave docs unchanged after this pass.
 
 ## User Preferences
 
-- Distribute a standalone Windows `pz.exe`; users must not need a Python startup script or Python installation. Source development may use Python.
+- Distribute a standalone windowed `PZToolkit.exe` for mod management and in-game tests. Preserve `pz.exe` as the CLI/MCP entry point; the desktop workflow must not require PowerShell or a Python installation.
+- Brand the GUI as Dead Signal Interactive with the approved distressed logo.
+  Use the requested sci-fi/zombie horror atmosphere through materials and
+  lighting only, with no actual aliens, predators or creature figures. Preserve
+  clear native controls and evidence boundaries while changing its appearance.
 - Continue authorized implementation and routine maintenance autonomously.
 - Subagents are authorized. Coordinate ownership before concurrent edits.
 - Treat user input during work as steering while preserving the active goal.
@@ -74,11 +78,16 @@ visible. Decorative artwork is optional; its presence never implies validation.
 
 | Child | Scope |
 | --- | --- |
-| `src/pztoolkit/AGENTS.md` | Shared tools, CLI/MCP adapters, harness, bundled mod bridge |
+| `src/pztoolkit/AGENTS.md` | Shared tools, desktop/CLI/MCP adapters, harness, bundled assets |
 | `tests/AGENTS.md` | Offline verification and integration test evidence |
 | `docs/AGENTS.md` | Design, plan, provenance, operating instructions |
 
 The root also owns `.github/`, packaging, examples, and other unindexed paths.
-`packaging/` owns the frozen entry point, Windows build command and executable
-smoke test. Bundle the MCP runtime and bridge assets; verify CLI and MCP through
-the binary before delivery. Keep generated binaries in ignored `dist/`.
+`PRODUCT.md` owns confirmed product/brand requirements. `DESIGN.md` owns the
+desktop visual contract; `docs/design.md` remains the architecture authority.
+`.impeccable/` holds the user's code-first design workflow and desktop brief;
+scratch work and local review captures are ignored by Git.
+`packaging/` owns the frozen GUI and console entry points, Windows build command
+and executable smoke tests. Bundle the required runtimes and bridge assets;
+verify the desktop window, CLI and MCP before delivery. Keep binaries in ignored
+`dist/`. The root owns native app packaging and ZIP delivery contracts.

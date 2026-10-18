@@ -77,3 +77,26 @@ scenario execution. The latter remains unverified until captured in a live run.
 No global skill installation is required: the user's library clone and existing
 installed engineering skills provide the workflow sources. DOX installation is
 project-local and does not replace the user's global configuration.
+
+The Windows desktop addition applies frontend-ui-engineering to task hierarchy,
+native controls, empty states and actionable errors, with Python's standard Tk
+toolkit avoiding another UI runtime. Context7 supplied current CPython Tk widget,
+event-loop and thread handoff documentation. Computer Use inspected the actual
+frozen app window and exercised its bridge readiness control. GUI regression
+tests use actual Windows Tk widgets and simulated game responses, keeping that
+evidence separate from in-world acceptance.
+
+The user-directed horror redesign applies the installed Impeccable skill and its
+matching snapshot in `raiinman/skill-library`, plus that library's visual-design
+guidance for material hierarchy, spacing and typography. Web-only control and
+animation recipes do not replace native desktop affordances. Impeccable's context
+and concept-seed tools ran; the user pinned the horror direction, approved
+distressing their actual logo and selected the code-first build path. The built-in
+image-generation skill produced the distressed logo and corrected empty-facility
+header. Asset prompts/provenance are under `src/pztoolkit/assets/gui/`.
+
+Oxanium is bundled from the official Google Fonts source with its OFL license.
+A fresh reviewer checked actual artwork and source without inheriting the build
+conversation. That review found no source/artwork blocker, but did not certify
+rendered appearance: Computer Use had been stopped with Escape. No screenshot
+or alternative desktop automation was used to bypass that stop.

@@ -1,34 +1,32 @@
 # Project Zomboid Toolkit for Windows
 
-Extract the ZIP into its own folder. `pz.exe` is a standalone console application
-with the Python runtime and MCP support included. You do not need to install Python.
+Extract the ZIP into its own folder and double-click **PZToolkit.exe**. It opens
+the desktop app without a terminal. Python is bundled; no separate installation
+is needed.
 
-Open PowerShell in that folder:
+1. In **Setup**, choose your game installation, mod workspace and a new isolated
+   test profile. Choose **Save setup**, then **Prepare test profile**.
+2. In **Mods**, enter a mod ID, choose **Create mod**, then select it and choose
+   **Check selected** and **Deploy to test profile**. **Open mod folder** opens
+   its source files in Explorer for editing with your preferred editor.
+3. In **In-game tests**, choose **Launch test game**. Enable **PZ Toolkit Bridge**
+   and your mod in the game's Mods menu. Enter a disposable single-player world
+   and unpause it.
+4. Choose **Check bridge**, select a generated scenario, review or edit the Lua,
+   and save your changes. Select the trust checkbox, then **Run saved scenario**.
+   Results appear in the window. **Read game logs** and **Open reports** show
+   the captured evidence.
+
+App settings are stored in `%LOCALAPPDATA%/PZToolkit/config.json` by default.
+Use **Open config** to share an existing CLI/MCP configuration. The active
+settings file is shown in Setup. Keep the isolated profile outside normal
+Zomboid saves and mods. Relative folders resolve beside the configuration file.
+
+The separate **pz.exe** retains the CLI and MCP server for scripts and AI clients.
+For optional CLI use, pass the settings path shown in the app:
 
 ```powershell
-Copy-Item pztoolkit.example.json pztoolkit.local.json
-.\pz.exe call doctor
-.\pz.exe tools
-```
-
-Edit `game_dir` in `pztoolkit.local.json` for your installed game. Keep the
-isolated profile outside your normal Zomboid saves and mods. Configuration paths
-resolve beside the config file. The default config is found in your current
-working directory; use `--config C:/absolute/path/pztoolkit.local.json` elsewhere.
-
-```powershell
-.\pz.exe call profile_prepare
-.\pz.exe call mod_create --args-file examples/create-mod.json
-.\pz.exe call mod_deploy --args-file examples/check-mod.json
-.\pz.exe call game_launch
-```
-
-Enable PZ Toolkit Bridge and HelloZomboid in the isolated game, enter a disposable
-single-player world and unpause it. Then:
-
-```powershell
-.\pz.exe call bridge_status
-.\pz.exe call harness_run --args-file examples/smoke.json
+.\pz.exe --config "$env:LOCALAPPDATA/PZToolkit/config.json" tools
 ```
 
 Run only trusted, terminating Lua scenarios. Timeout cannot cancel Lua already
