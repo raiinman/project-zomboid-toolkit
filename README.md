@@ -5,9 +5,9 @@
   <img alt="Target: Build 42" src="https://img.shields.io/badge/target-Build_42-9c714d">
   <img alt="Windows app" src="https://img.shields.io/badge/app-Windows-blue">
 </p>
-<p align="center"><a href="docs/design.md">Architecture</a> Â· <a href="docs/plan.md">Delivery plan</a> Â· <a href="docs/validation.md">Validation</a> Â· <a href="docs/skills.md">Skills</a> Â· <a href="AGENTS.md">Agent guidance</a></p>
+<p align="center"><a href="docs/design.md">Architecture</a> Ã‚Â· <a href="docs/plan.md">Delivery plan</a> Ã‚Â· <a href="docs/validation.md">Validation</a> Ã‚Â· <a href="docs/skills.md">Skills</a> Ã‚Â· <a href="AGENTS.md">Agent guidance</a></p>
 
-<p align="center"><strong>v0.4.1 remains blocked.</strong> Defender quarantined its CLI. Do not restore it or add an exclusion. The clean CI-built v0.4.2 bundle passed an ordinary Defender scan on the development PC and is installed there with verified MCP transport. It remains unsigned; public downloads are withheld pending remaining release checks. See <a href="docs/validation.md">validation evidence</a>.</p>
+<p align="center"><strong>v0.4.1 remains blocked.</strong> Defender quarantined its CLI. Do not restore it or add an exclusion. The clean CI-built v0.4.3 bundle passed an ordinary Defender scan on the development PC and is installed there with verified MCP transport. It remains unsigned; public downloads are withheld pending remaining release checks. See <a href="docs/validation.md">validation evidence</a>.</p>
 
 Use the toolkit with the game closed to read saved logs, search and read installed
 game scripts, or check saved settings. Connect Codex or another MCP client when
@@ -17,7 +17,7 @@ menu remains responsible for enabling mods.
 
 ## Open and use offline tools
 
-Windows downloads are currently withheld pending the checks above. Version 0.4.2
+Windows downloads are currently withheld pending the checks above. Version 0.4.3
 uses a complete application bundle, including support files.
 Installed copies have a Start menu
 entry under **Dead Signal Interactive**. No terminal or Python installation is

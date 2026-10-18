@@ -7,8 +7,26 @@ cases. Lockfile, dependency compatibility, source compilation and diff checks
 passed. Independent GUI review found no blocking issues. The default Offline
 tools page exercises shared logs, search, source excerpts and settings without
 bridge installation or game launch. Fresh readiness guards protect live actions.
-Mapped layout verification runs only on the isolated Windows CI runner. Candidate
-Defender scan and installation evidence will be recorded after those gates run.
+Mapped layout verification runs only on the isolated Windows CI runner. Clean CI run `39146105034` built commit
+`b94ebbfba6377f6eb5e03b2b0664ee5089662b85`. Both Windows Python jobs passed
+232 tests; both Linux jobs passed 195 with 37 platform skips. The mapped source
+GUI smoke passed at 1100x860, including offline search, results and output bounds,
+initial-page selection and absence of profile creation. Hosted Defender was
+unavailable, so CI remains failed and frozen runner probes were skipped.
+
+Ordinary actual-PC Defender scanning passed for the exact bundle and ZIP at
+`2026-10-18T16:43:28Z`, with event pairs `26814/26815` and `26816/26817`, no
+new detections and unchanged hashes. ZIP SHA-256:
+`7C4802A97FA77B587635662CDD0D68C74327DB9E732E72F141BC0E3963790306`.
+The unsigned v0.4.3 bundle was installed per user after this scan. The existing
+Start-menu shortcut was updated, preserving saved settings, token and the entire
+Codex configuration. The working v0.4.2 MCP registration was intentionally kept
+so this chat needed no restart. A hidden installed-v0.4.3 MCP fixture probe passed
+11-tool discovery and doctor/logs/search/read with no running game dependency.
+Defender inventory and installed hashes remained unchanged after the probe.
+This chat also completed native doctor and installed-script search using its
+existing MCP connection. No game launch, profile deployment or desktop input
+was used. Private build, scan, installation and probe receipts remain outside Git.
 No visible app launch or live game/editor acceptance was performed on the PC.
 
 ## v0.4.2 installed Windows candidate
