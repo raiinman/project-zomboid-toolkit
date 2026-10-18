@@ -8,6 +8,7 @@ implementation, separately from the research findings.
 | Full offline suite | 107 tests passed on local Windows, Python 3.11, including 19 native GUI tests and 15 read-only discovery tests. Guide arrows, success/failure completion, readiness gating, contrast, first-launch detection, preview-only configuration and error handling are covered |
 | Folder discovery | Actual read-only detection found the installed game in its common install location. Fixture tests cover secondary Steam libraries, multiple installs, retained settings, malformed/inaccessible metadata, read bounds and normal-profile default rejection |
 | v0.3.1 delivery | Frozen GUI minimum-size Setup bounds, CLI bootstrap detection, shared tool discovery and actual MCP handshake passed. Installed the verified build per user, updated the existing Start menu shortcut and observed its installed window. Configuration hash remained unchanged. Installed folders_detect retained the existing game/workspace/profile paths |
+| v0.3.2 launcher wording | GUI, guide and bundled instructions use "Launch Project Zomboid (test profile)". Launcher is on a separate row. All 19 local GUI tests passed; source and frozen window checks confirmed Setup/test controls and trust checkbox fit at 1100 x 860. Frozen CLI/MCP checks passed. Installed v0.3.2, updated Start menu, verified executable digest and running installed window, and retained the configuration hash |
 | MCP connection | Actual stdio handshake, discovery, schema parity and invocation passed |
 | Boundary cases | Invalid inputs, ownership collisions, traversal and Windows junction regressions passed |
 | Harness transport | Correlation, stale responses, failure, malformed result, timeout, lock cleanup and reports passed |
@@ -63,3 +64,9 @@ frozen executable checks on Windows 3.11. Release asset digests match the locall
 verified builds. This adds no new live-game acceptance evidence. The DOX pass
 updated root, source and test contracts; `docs/AGENTS.md` and GUI asset contracts
 are unchanged because ownership, indexes and artwork did not change.
+
+The [v0.3.2 launcher-label CI run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39092850254)
+passed all four jobs for `7c52060`, including Windows executable checks. Release
+asset digests match local builds. Root preferences and DESIGN.md record the
+requested wording; source/test/docs owning AGENTS.md files remain unchanged
+because this label/layout adjustment changes no tool contract or ownership.
