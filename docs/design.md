@@ -96,6 +96,13 @@ the heartbeat stale and prevent work from completing until the world resumes.
 `tests/` owns offline behavior checks. `docs/plan.md` owns delivery checkpoints.
 The root and child AGENTS.md hierarchy defines stable contribution contracts.
 
+Windows delivery uses a standalone console `pz.exe` with embedded Python, MCP
+dependencies and bridge data. CLI and MCP use that same binary (`serve` selects
+stdio MCP). `packaging/build.ps1` builds it and a ZIP with config/examples;
+`packaging/verify_exe.py` exercises the frozen CLI, asset deployment and MCP
+protocol from a temporary directory. The frozen entry point resets the Windows
+DLL directory so external game processes inherit normal DLL lookup paths.
+
 Create a Python environment, install the package with development extras, and run
 `python -m pytest`. Use the installed CLI's `--help` and tool listing as the source
 of truth for runnable commands. Development tests use pytest and Lupa for local

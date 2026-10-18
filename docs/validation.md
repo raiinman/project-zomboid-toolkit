@@ -13,6 +13,7 @@ implementation, separately from the research findings.
 | Research changes | Allowed extensions, missing compiler, network guards, launch arguments and log rollover covered |
 | Dependencies | Frozen lock check and installed-package compatibility check passed |
 | Packaging | Source distribution and wheel built; required bridge/common assets found in wheel |
+| Windows executable | PyInstaller 6.22.3 single-file `pz.exe` built; CLI discovery, bundled bridge deployment, actual MCP handshake, schema parity, invocation and invalid input verified from a temporary working directory |
 | Local CLI smoke | Doctor, profile preparation, sample scaffold/check/deploy passed |
 | Real game startup | Windows client process launched with isolated cachedir, debug and mods-only discovery |
 | Runtime startup artifacts | Isolated console/OpenGL initialization and version file created, reporting 42.20.0, revision a2947723ca |

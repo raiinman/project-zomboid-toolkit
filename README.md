@@ -16,15 +16,18 @@ Server administration and gameplay automation remain later milestones.
 
 ## Setup
 
-Requires Python 3.11+, [uv](https://docs.astral.sh/uv/), and your own Project Zomboid
-installation for live testing. The current launcher targets Windows and Build 42.
-The Python tools and offline tests also run on Linux.
+Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.1.0/pz-windows.zip),
+extract it, and open PowerShell in the extracted folder.
+
+Use the standalone Windows **`pz.exe`**. It bundles its runtime, MCP dependencies
+and Lua bridge, so no Python installation or startup script is needed. Live
+testing requires your own Project Zomboid installation. The launcher targets
+Windows and Build 42. This is a console application; run commands in PowerShell.
 
 ```powershell
-uv sync --frozen --extra mcp --extra dev --python 3.11
 Copy-Item pztoolkit.example.json pztoolkit.local.json
-uv run --no-sync pz call doctor
-uv run --no-sync pz tools
+.\pz.exe call doctor
+.\pz.exe tools
 ```
 
 Edit `game_dir` in `pztoolkit.local.json` to your game installation. Relative paths
@@ -37,11 +40,11 @@ Local configuration, profiles, tokens, game logs, and reports are ignored by Git
 Examples read JSON argument files so shell quoting works consistently.
 
 ```powershell
-uv run --no-sync pz call profile_prepare
-uv run --no-sync pz call mod_create --args-file examples/create-mod.json
-uv run --no-sync pz call mod_check --args-file examples/check-mod.json
-uv run --no-sync pz call mod_deploy --args-file examples/check-mod.json
-uv run --no-sync pz call game_launch
+.\pz.exe call profile_prepare
+.\pz.exe call mod_create --args-file examples/create-mod.json
+.\pz.exe call mod_check --args-file examples/check-mod.json
+.\pz.exe call mod_deploy --args-file examples/check-mod.json
+.\pz.exe call game_launch
 ```
 
 First launch may clear the prepared default mod list. In the isolated game window,
@@ -50,9 +53,9 @@ enabled under Mods. Create a disposable single-player world with both mods enabl
 Once your character is loaded and the game is running:
 
 ```powershell
-uv run --no-sync pz call bridge_status
-uv run --no-sync pz call harness_run --args-file examples/smoke.json
-uv run --no-sync pz call logs_read --args-file examples/logs.json
+.\pz.exe call bridge_status
+.\pz.exe call harness_run --args-file examples/smoke.json
+.\pz.exe call logs_read --args-file examples/logs.json
 ```
 
 `mod_create` writes `projects/mods/HelloZomboid/42/mod.info`, a client Lua file,
@@ -74,16 +77,14 @@ requests when connected as a multiplayer client.
 
 ## MCP connection
 
-Install the `mcp` extra as shown above. Configure your MCP client to launch the
-project environment's Python with absolute paths:
+Configure your MCP client to launch the executable with absolute paths:
 
 ```json
 {
   "mcpServers": {
     "project-zomboid": {
-      "command": "C:/path/to/project-zomboid-toolkit/.venv/Scripts/python.exe",
+      "command": "C:/path/to/project-zomboid-toolkit/pz.exe",
       "args": [
-        "-m", "pztoolkit",
         "--config", "C:/path/to/project-zomboid-toolkit/pztoolkit.local.json",
         "serve"
       ]
@@ -92,7 +93,7 @@ project environment's Python with absolute paths:
 }
 ```
 
-This is a generic MCP client example. On Linux use `.venv/bin/python`.
+This is a generic MCP client example. The executable includes MCP support.
 The server communicates over stdio and reserves stdout for MCP messages.
 It uses the official Python MCP SDK 1.x, pinned by `uv.lock`.
 
@@ -116,7 +117,23 @@ and is never bundled or uploaded by these tools.
 
 ## Verification
 
+Source development and executable builds require Python 3.11+ and
+[uv](https://docs.astral.sh/uv/). These are build dependencies, not requirements
+for users of the executable. To build on Windows:
+
 ```powershell
+.\packaging\build.ps1
+uv run --no-sync python packaging/verify_exe.py dist/pz.exe
+```
+
+The outputs are `dist/pz.exe` and `dist/pz-windows.zip` (executable, config
+template, examples and quickstart). Extract the ZIP before following Setup.
+Keep the configuration and scenario files outside
+the executable. Relative configuration paths resolve beside the config file;
+the default config is found in the current working directory. For source tests:
+
+```powershell
+uv sync --frozen --extra mcp --extra dev --python 3.11
 uv lock --check
 uv pip check
 uv run --no-sync python -m pytest -q

@@ -37,5 +37,12 @@ jobs:
         run: uv run --no-sync python -m compileall -q src tests
       - name: Run offline contracts and simulated Lua bridge
         run: uv run --no-sync python -m pytest -q
+      - name: Build standalone Windows executable
+        if: matrix.os == 'windows-latest' && matrix.python == '3.11'
+        shell: pwsh
+        run: ./packaging/build.ps1
+      - name: Verify executable CLI, assets and MCP protocol
+        if: matrix.os == 'windows-latest' && matrix.python == '3.11'
+        run: uv run --no-sync python packaging/verify_exe.py dist/pz.exe
       # Live gameplay requires the user's installed game and an isolated debug
       # profile. Simulated transport tests do not constitute live acceptance.

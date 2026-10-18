@@ -51,6 +51,7 @@ edits that preserve contracts may leave docs unchanged after this pass.
 
 ## User Preferences
 
+- Distribute a standalone Windows `pz.exe`; users must not need a Python startup script or Python installation. Source development may use Python.
 - Continue authorized implementation and routine maintenance autonomously.
 - Subagents are authorized. Coordinate ownership before concurrent edits.
 - Treat user input during work as steering while preserving the active goal.
@@ -78,3 +79,6 @@ visible. Decorative artwork is optional; its presence never implies validation.
 | `docs/AGENTS.md` | Design, plan, provenance, operating instructions |
 
 The root also owns `.github/`, packaging, examples, and other unindexed paths.
+`packaging/` owns the frozen entry point, Windows build command and executable
+smoke test. Bundle the MCP runtime and bridge assets; verify CLI and MCP through
+the binary before delivery. Keep generated binaries in ignored `dist/`.
