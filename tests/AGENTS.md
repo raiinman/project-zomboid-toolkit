@@ -5,7 +5,10 @@ Verify tool contracts and regression behavior independently of game ownership.
 ## Ownership
 
 Offline unit/integration tests, fixtures, and protocol parity checks.
-`test_gui.py` owns native Windows Tk flows for Connection and Game tools,
+`test_gui.py` owns native Windows Tk flows for Offline tools, Connection and Game tools,
+read-only logs/search/excerpts/settings without connection, missing-log empty states,
+and live-action readiness guards. Keep local Tk test windows withdrawn before
+Application construction, without window activation or desktop input. It covers
 worker responsiveness, trusted inline Lua, built-in editors, actual status,
 readable controls and absence of mod/folder/scenario setup UI.
 `test_inline_tools.py` owns inline transport without workspace/report creation,

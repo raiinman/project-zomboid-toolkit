@@ -40,6 +40,20 @@ transport, and packaged Lua bridge assets.
   tool work on a serialized worker and widgets on the Tk thread. Show errors
   and inconclusive timeouts in the window. Settings default to
   `%LOCALAPPDATA%/PZToolkit/config.json` and existing values are reused.
+- Open on Offline tools, with saved test-profile logs, literal installed-script
+  search, bounded source excerpts and read-only settings checks available without
+  a live connection. Missing logs are a normal empty state. First offline use may
+  detect and save app-owned settings, but must not prepare a profile, install a
+  bridge or launch the game. Keep readable results on the page, raw JSON in Details.
+- Missing or unowned profile log/status reads return a normal empty/not-ready
+  result without creating files or reading unowned content. Report game_state as
+  world_loaded for fresh readiness, running/closed only after inspecting a tracked
+  process, and unknown when no process evidence exists.
+- Live god-mode/editor/Lua buttons require a successful fresh readiness check;
+  recheck in the serialized worker before dispatch, since a world may close or
+  pause after a previous check. Explain loaded debug single-player/unpaused
+  requirements and preserve offline access when live commands fail. Only call
+  the game closed when the core reports proof of an exited tracked process.
 - Present a direct game toolbelt with connection, god mode and built-in editor
   actions. No mod manager, folder controls, scenario files or authoring workflow.
   Use existing saved settings automatically and keep raw output behind Details.
@@ -58,6 +72,9 @@ the installed game's Lua files as the version-specific source of truth.
 
 ## Verification
 
+GUI smoke reports exercise offline settings only, check bundled bridge assets,
+record the initial page and detect unwanted profile creation. Mapped layout
+verification runs in CI; local maintenance keeps test windows withdrawn.
 Run the relevant tests under `tests/`. Only a real client run can validate Lua
 API assumptions, launch flags, and mod activation for the installed game build.
 

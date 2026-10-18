@@ -17,6 +17,8 @@ evidence and the blocked-release recovery workflow.
 ## Local Contracts
 
 - Label planned, implemented, offline-tested, and game-tested behavior distinctly.
+- Lead app instructions with Offline tools and distinguish installed-file/history
+  prerequisites from loaded, unpaused debug single-player bridge requirements.
 - Record assumptions and compatibility gaps without claiming live validation.
 - Distinguish official API signatures, official release history, community event
   explanations, and local shipped-source evidence when documenting game behavior.

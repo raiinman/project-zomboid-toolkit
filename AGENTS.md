@@ -70,6 +70,9 @@ edits that preserve contracts may leave docs unchanged after this pass.
   Preserve its existing PNG while using the charcoal, ivory and studio-red
   sidebar workbench in DESIGN.md. The user rejected green. Keep creatures out
   of the interface and preserve clear native controls and evidence boundaries.
+- Open on Offline tools. Saved test logs, installed-script search/read and settings
+  checks must work with the game closed, without preparing a profile or installing
+  the bridge. Clearly distinguish these from live world commands.
 - Explain actions in beginner language and keep technical output behind Details.
   Automatically use the existing saved game connection. Do not expose folder
   choices or require new project/workspace/scenario files. Inline commands use

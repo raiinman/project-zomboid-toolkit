@@ -36,6 +36,8 @@ class Application:
         self.last_result = None
         self.jobs = queue.Queue()
         self.actions = []
+        self.live_actions = []
+        self.search_matches = []
         self.connected = False
         self.lua_execution_available = None
         self.lua_dirty = False
@@ -61,19 +63,20 @@ class Application:
         ttk.Label(rail, text="Project Zomboid\nToolbelt", style="RailTitle.TLabel").pack(anchor="w", pady=(8, 24))
         shell = ttk.Frame(outer, padding=(24, 20))
         shell.pack(side="left", fill="both", expand=True)
-        self.page_title = tk.StringVar(value="Connect to Project Zomboid")
+        self.page_title = tk.StringVar(value="Offline tools")
         ttk.Label(shell, textvariable=self.page_title, style="Page.TLabel").pack(anchor="w", pady=(0, 14))
-        self.status = tk.StringVar(value="Not checked yet. Click Connect to game to get started.")
+        self.status = tk.StringVar(value="Offline tools are ready. Live game not checked yet.")
         self.status_label = ttk.Label(shell, textvariable=self.status, style="Status.TLabel", padding=12, wraplength=800)
         self.status_label.pack(fill="x", pady=(0, 14))
         self.status_trace = self.status.trace_add("write", lambda *_: self.status_label.configure(style="Status.TLabel"))
         shell.bind("<Configure>", lambda event: self.status_label.configure(wraplength=max(350, event.width - 40)))
         self.tabs = ttk.Notebook(shell, style="Workspace.TNotebook")
         self.tabs.pack(fill="both", expand=True)
+        self.offline = ttk.Frame(self.tabs, padding=16)
         self.connection = ttk.Frame(self.tabs, padding=16)
         self.tools = ttk.Frame(self.tabs, padding=16)
         self.navigation = {}
-        for title, page in (("Connection", self.connection), ("Game tools", self.tools)):
+        for title, page in (("Offline tools", self.offline), ("Connection", self.connection), ("Game tools", self.tools)):
             self.tabs.add(page, text=title)
             self.navigation[title] = ttk.Button(rail, text=title, style="Nav.TButton", command=lambda page=page: self.tabs.select(page))
             self.navigation[title].pack(fill="x", pady=4)
@@ -81,6 +84,7 @@ class Application:
         ttk.Label(rail, text="Codex uses the same bridge.\nThis app need not stay open.", style="RailCopy.TLabel", wraplength=195).pack(side="bottom", anchor="w", pady=12)
         self.tabs.enable_traversal()
         self.tabs.bind("<<NotebookTabChanged>>", self.page_changed)
+        self._offline_page()
         self._connection_page()
         self._tools_page()
         footer = ttk.Frame(shell)
@@ -92,6 +96,7 @@ class Application:
         self.output = self.text_box(self.details, height=5)
         self.output.configure(state="disabled")
         self._load_existing()
+        self.update_actions()
         self.poll_handle = root.after(80, self.poll)
 
     def _style(self):
@@ -125,12 +130,18 @@ class Application:
         style.layout("Workspace.TNotebook.Tab", [])
         style.configure("Workspace.TNotebook", borderwidth=0, background=INK)
         style.map("TCheckbutton", background=[("active", PANEL)], indicatorbackground=[("selected", ACCENT)])
+        style.configure("TEntry", fieldbackground="#1b1b1f", foreground=TEXT, insertcolor=ACCENT)
+        style.configure("Treeview", background="#1b1b1f", fieldbackground="#1b1b1f", foreground=TEXT, rowheight=26)
+        style.map("Treeview", background=[("selected", "#733c32")], foreground=[("selected", TEXT)])
+        style.configure("Treeview.Heading", background=PANEL, foreground=TEXT)
         style.configure("TScrollbar", background=EDGE, troughcolor=INK, arrowcolor=TEXT)
         style.configure("Horizontal.TProgressbar", background=ACCENT, troughcolor=PANEL)
 
-    def button(self, parent, label, command, primary=False):
+    def button(self, parent, label, command, primary=False, live=False):
         button = ttk.Button(parent, text=label, command=command, style="Accent.TButton" if primary else "TButton")
         self.actions.append(button)
+        if live:
+            self.live_actions.append(button)
         return button
 
     @staticmethod
@@ -146,6 +157,82 @@ class Application:
         text.pack(side="left", fill="both", expand=True)
         return text
 
+    def _offline_page(self):
+        ttk.Label(self.offline, text="Use these with the game closed", style="Heading.TLabel").pack(anchor="w")
+        ttk.Label(self.offline, text="Read saved test-game logs, search the installed game scripts, or check settings. These tools do not launch the game or change game files.", wraplength=800).pack(anchor="w", pady=(6, 12))
+        row = ttk.Frame(self.offline)
+        row.pack(fill="x", pady=(0, 12))
+        self.button(row, "Read game logs", lambda: self.dispatch("logs_read")).pack(side="left", padx=(0, 10))
+        self.button(row, "Check settings", lambda: self.dispatch("doctor")).pack(side="left")
+        ttk.Label(self.offline, text="Logs are saved history from the isolated test profile. No log yet is normal; you can still use the other offline tools.", wraplength=800, style="Subtitle.TLabel").pack(anchor="w", pady=(0, 12))
+        ttk.Label(self.offline, text="Find text in game scripts", style="Heading.TLabel").pack(anchor="w")
+        row = ttk.Frame(self.offline)
+        row.pack(fill="x", pady=(6, 8))
+        self.query = tk.StringVar()
+        self.search_entry = ttk.Entry(row, textvariable=self.query)
+        self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.search_entry.bind("<Return>", lambda event: self.search_source())
+        self.button(row, "Search scripts", self.search_source).pack(side="left")
+        self.results = ttk.Treeview(self.offline, columns=("location", "text"), show="headings", height=5, selectmode="browse")
+        self.results.heading("location", text="Script and line")
+        self.results.heading("text", text="Matching text")
+        self.results.column("location", width=280)
+        self.results.column("text", width=380)
+        self.results.pack(fill="x", pady=(0, 8))
+        self.results.bind("<<TreeviewSelect>>", self.choose_source)
+        self.results.bind("<Double-1>", lambda event: self.read_source())
+        ttk.Label(self.offline, text="Select a result, then Read script. Or enter a game script path, for example lua/client/ISUI/ISPanel.lua.", wraplength=800, style="Subtitle.TLabel").pack(anchor="w")
+        row = ttk.Frame(self.offline)
+        row.pack(fill="x", pady=(6, 10))
+        self.source_path = tk.StringVar()
+        self.source_start = tk.StringVar(value="1")
+        ttk.Entry(row, textvariable=self.source_path).pack(side="left", fill="x", expand=True, padx=(0, 8))
+        ttk.Label(row, text="Line").pack(side="left", padx=(0, 4))
+        ttk.Entry(row, textvariable=self.source_start, width=6).pack(side="left", padx=(0, 8))
+        self.button(row, "Read script", self.read_source).pack(side="left")
+        self.offline_output = self.text_box(self.offline, height=7)
+        self.set_offline_output("Choose Read game logs, Check settings, or search for a word such as getPlayer. No game connection is needed.")
+
+    def set_offline_output(self, text):
+        self.offline_output.configure(state="normal")
+        self.offline_output.delete("1.0", "end")
+        self.offline_output.insert("1.0", text)
+        self.offline_output.configure(state="disabled")
+
+    def search_source(self):
+        query = self.query.get().strip()
+        if not query:
+            self.status.set("Enter a word or phrase to search the installed game scripts.")
+            return
+        self.dispatch("source_search", {"query": query})
+
+    def choose_source(self, event=None):
+        selection = self.results.selection()
+        if selection:
+            match = self.search_matches[int(selection[0])]
+            self.source_path.set(match["path"])
+            self.source_start.set(str(max(1, match["line"] - 5)))
+
+    def read_source(self):
+        try:
+            start = int(self.source_start.get())
+            if start < 1:
+                raise ValueError
+        except ValueError:
+            self.status.set("Enter a line number of 1 or higher.")
+            return
+        if not self.source_path.get().strip():
+            self.status.set("Select a search result or enter a script path first.")
+            return
+        self.dispatch("source_read", {"path": self.source_path.get().strip(), "start": start})
+
+    def update_actions(self):
+        for button in self.actions:
+            disabled = self.busy or (button in self.live_actions and not self.connected)
+            if button is self.lua_button and self.lua_execution_available is False:
+                disabled = True
+            button.configure(state="disabled" if disabled else "normal")
+
     def _connection_page(self):
         if (ASSETS / "derelict-workshop.png").exists():
             self.hero_source = tk.PhotoImage(master=self.root, data=(ASSETS / "derelict-workshop.png").read_bytes(), format="png")
@@ -153,9 +240,9 @@ class Application:
             self.hero = tk.Canvas(self.connection, height=130, background=INK, highlightthickness=0)
             self.hero.pack(fill="x", pady=(0, 18))
             self.hero.bind("<Configure>", self.draw_hero)
-        ttk.Label(self.connection, text="Connect Codex and this toolbelt to the game's debug tools and built-in editors.", wraplength=800, style="Heading.TLabel").pack(anchor="w", pady=(0, 8))
+        ttk.Label(self.connection, text="Connect only when you need live game controls.", wraplength=800, style="Heading.TLabel").pack(anchor="w", pady=(0, 8))
         ttk.Label(self.connection, text="The bridge is a small game helper. Connect installs it only if needed, then checks the game. You do not need to create a mod or choose folders.", wraplength=800).pack(anchor="w", pady=(0, 16))
-        self.next_step = tk.StringVar(value="Start here: Connect to game.")
+        self.next_step = tk.StringVar(value="Offline tools work now. For live controls: Connect to game, then load a world.")
         ttk.Label(self.connection, textvariable=self.next_step, wraplength=800).pack(anchor="w", pady=(0, 10))
         row = ttk.Frame(self.connection)
         row.pack(fill="x", pady=(0, 10))
@@ -170,7 +257,7 @@ class Application:
 
     def _tools_page(self):
         ttk.Label(self.tools, text="Open the game's own tools", style="Heading.TLabel").pack(anchor="w")
-        ttk.Label(self.tools, text="Keep a debug single-player world loaded and unpaused. An editor can pause the game; return to the world and unpause before the next command.", wraplength=800).pack(anchor="w", pady=(6, 12))
+        ttk.Label(self.tools, text="Requires a running game, a loaded debug single-player world, and an unpaused bridge connection. These buttons unlock after Check connection succeeds. Offline tools work without this.", wraplength=800).pack(anchor="w", pady=(6, 12))
         self.tool_tabs = ttk.Notebook(self.tools)
         self.tool_tabs.pack(fill="both", expand=True)
         self.editors_page = ttk.Frame(self.tool_tabs, padding=12)
@@ -178,16 +265,16 @@ class Application:
         self.tool_tabs.add(self.editors_page, text="Built-in editors")
         self.tool_tabs.add(self.lua_page, text="Lua command (advanced)")
         for index, (identifier, label, description) in enumerate(EDITORS):
-            self.button(self.editors_page, label, lambda identifier=identifier: self.dispatch("editor_open", {"editor": identifier})).grid(row=index, column=0, sticky="ew", pady=5, padx=(0, 14))
+            self.button(self.editors_page, label, lambda identifier=identifier: self.dispatch("editor_open", {"editor": identifier}), live=True).grid(row=index, column=0, sticky="ew", pady=5, padx=(0, 14))
             ttk.Label(self.editors_page, text=description, wraplength=450).grid(row=index, column=1, sticky="w", pady=5)
         self.editors_page.columnconfigure(1, weight=1)
         row = ttk.Frame(self.editors_page)
         row.grid(row=5, column=0, columnspan=2, sticky="w", pady=(18, 10))
-        self.button(row, "God mode on", lambda: self.dispatch("god_mode", {"enabled": True})).pack(side="left", padx=(0, 10))
-        self.button(row, "God mode off", lambda: self.dispatch("god_mode", {"enabled": False})).pack(side="left")
+        self.button(row, "God mode on", lambda: self.dispatch("god_mode", {"enabled": True}), live=True).pack(side="left", padx=(0, 10))
+        self.button(row, "God mode off", lambda: self.dispatch("god_mode", {"enabled": False}), live=True).pack(side="left")
         row = ttk.Frame(self.editors_page)
         row.grid(row=6, column=0, columnspan=2, sticky="w", pady=5)
-        self.button(row, "Read game logs", lambda: self.dispatch("logs_read")).pack(side="left", padx=(0, 10))
+        self.button(row, "Offline tools", lambda: self.tabs.select(self.offline)).pack(side="left", padx=(0, 10))
         self.button(row, "Check connection", lambda: self.dispatch("bridge_status")).pack(side="left")
         self.lua_help = tk.StringVar(value="Lua commands run directly in your loaded test world and may change it. Review the code before trusting it. No command files are needed.")
         ttk.Label(self.lua_page, textvariable=self.lua_help, wraplength=800).pack(anchor="w", pady=(0, 10))
@@ -198,7 +285,7 @@ class Application:
         self.editor.bind("<<Modified>>", self.editor_changed)
         self.trust_control = ttk.Checkbutton(self.lua_page, text="I reviewed this Lua and trust it to change my test world.", variable=self.trusted, command=self.confirm_trust)
         self.trust_control.pack(anchor="w", pady=10)
-        self.lua_button = self.button(self.lua_page, "Run Lua command", self.run_lua, True)
+        self.lua_button = self.button(self.lua_page, "Run Lua command", self.run_lua, True, live=True)
         self.lua_button.pack(anchor="w")
 
     def draw_hero(self, event):
@@ -225,7 +312,7 @@ class Application:
         if not selected:
             return
         title = self.tabs.tab(selected, "text")
-        self.page_title.set("Connect to Project Zomboid" if title == "Connection" else "Game tools")
+        self.page_title.set("Connect to Project Zomboid" if title == "Connection" else title)
         for name, button in self.navigation.items():
             button.configure(style="Selected.Nav.TButton" if name == title else "Nav.TButton")
 
@@ -242,7 +329,7 @@ class Application:
             except (OSError, ValueError) as exc:
                 self.display("Saved connection settings could not be loaded. Click Connect to game to retry; Details has the reason.", str(exc), "error")
 
-    def _connect_operation(self):
+    def _settings_operation(self):
         if not self.config.exists():
             detected = detect_folders({}, self.config.parent)
             data = detected["suggested"]
@@ -256,7 +343,10 @@ class Application:
                 atomic_text(self.config, json.dumps(data, indent=2))
             finally:
                 temporary.unlink(missing_ok=True)
-        toolkit = Toolkit(self.config, tool_names=GAME_TOOL_NAMES)
+        return Toolkit(self.config, tool_names=GAME_TOOL_NAMES)
+
+    def _connect_operation(self):
+        toolkit = self._settings_operation()
         if not toolkit.call("doctor", {}).get("profile_prepared") or not (toolkit.profile / "mods/PZToolkitBridge/42/mod.info").is_file():
             toolkit.call("bridge_install", {})
         return toolkit, toolkit.call("bridge_status", {})
@@ -267,12 +357,16 @@ class Application:
     def dispatch(self, name, arguments=None):
         if self.busy:
             return
-        if not self.toolkit:
-            self.status.set("Click Connect to game first. It finds the saved game connection automatically.")
-            self.tabs.select(self.connection)
-            return
         toolkit = self.toolkit
-        self.start_job(name, lambda: toolkit.call(name, arguments or {}))
+        def operation():
+            active = toolkit or self._settings_operation()
+            if name in {"god_mode", "editor_open", "lua_execute"}:
+                status = active.call("bridge_status", {})
+                if status.get("ready") is not True:
+                    return {"live_blocked": True, "connection": status}
+            result = active.call(name, arguments or {})
+            return {"toolkit_initialized": active, "tool_result": result} if toolkit is None else result
+        self.start_job(name, operation)
 
     def editor_changed(self, event=None):
         if self.editor.edit_modified():
@@ -345,15 +439,21 @@ class Application:
         self.trust_control.configure(state="normal")
         if name == "connect" and not error:
             self.toolkit, result = result
+        elif not error and "toolkit_initialized" in result:
+            self.toolkit, result = result["toolkit_initialized"], result["tool_result"]
         self.last_result = {"error": error} if error else result
         tone, summary = "info", "Action completed."
         if error:
-            if name in {"connect", "bridge_status"}:
+            if name in {"connect", "bridge_status", "god_mode", "editor_open", "lua_execute"}:
                 self.connected = False
                 self.next_step.set("Connection check failed. Read the problem above, then Connect to game again.")
             tone = "error"
             summary = "Could not finish. " + error[:240] + " Open Details for the full reason."
+        elif result.get("live_blocked"):
+            self.connected = False
+            tone, summary = "warning", "Live game not connected. Load a debug single-player world and unpause, then Check connection. Offline tools are still available."
         elif result.get("status") in {"timed_out", "invalid_response"}:
+            self.connected = False
             tone = "warning"
             summary = "The game did not return a usable answer. The outcome is unknown. Unpause the world and check the connection before trying again."
         elif result.get("ok") is False:
@@ -378,8 +478,9 @@ class Application:
                     tone, summary = "warning", "Connected, but god mode could not be enabled. Open Details for the reason."
                 self.next_step.set("Connected. Open Game tools to use the built-in editors or god mode buttons.")
             else:
-                tone, summary = "warning", "Not connected. Launch the test game, enable PZ Toolkit Bridge, enter a single-player world and unpause. Then Check connection."
-                self.next_step.set("Next: launch your test game, enter a world and unpause, then Check connection.")
+                state = "Game closed." if result.get("game_state") == "closed" else "Live game not connected."
+                tone, summary = "info", state + " Offline tools are ready. For live controls, load a debug single-player world with the bridge enabled and unpause, then Check connection."
+                self.next_step.set("Offline tools need no game. For live controls, launch your test game if needed, load a world and unpause, then Check connection.")
             self.launch_button.configure(style="TButton" if self.connected else "Accent.TButton")
             self.connect_button.configure(style="TButton")
         elif name == "game_launch":
@@ -393,12 +494,25 @@ class Application:
         elif name == "lua_execute":
             summary = "Lua completed. " + str(result.get("message", "Open Details for the returned result."))
         elif name == "logs_read":
-            summary = "Game logs loaded in Details." if result.get("exists") else "No game log yet. Launch the test game first, then Read game logs."
-        self.lua_button.configure(state="disabled" if self.lua_execution_available is False else "normal")
+            summary = "Saved game logs loaded. These may describe an earlier session." if result.get("exists") else "No saved test-game log yet. This is normal. Other offline tools are ready."
+            self.set_offline_output("\n".join(result["lines"]) if result.get("exists") else summary)
+        elif name == "doctor":
+            summary = "Settings checked. " + ("Installed game scripts found." if result.get("game_found") else "Game scripts were not found at the saved installation. Ask Codex to repair the settings.")
+            self.set_offline_output(summary + "\nTest profile: " + ("prepared" if result.get("profile_prepared") else "not prepared yet, only needed for live controls") + "\nNo game files were changed.")
+        elif name == "source_search":
+            self.search_matches = result["matches"]
+            self.results.delete(*self.results.get_children())
+            for index, match in enumerate(self.search_matches):
+                self.results.insert("", "end", iid=str(index), values=(f"{match['path']}:{match['line']}", match["text"]))
+            summary = f"Found {len(self.search_matches)} matching lines." + (" Showing the first results; narrow your search for more." if result.get("limit_reached") else "")
+            self.set_offline_output(summary + (" Select a result, then Read script." if self.search_matches else " Try a different word or Check settings."))
+        elif name == "source_read":
+            summary = "Script excerpt loaded. Installed game files are read-only."
+            self.set_offline_output(result["path"] + "\n\n" + "\n".join(f"{number}: {line}" for number, line in enumerate(result["lines"], result["start"])))
+        if error and name in {"logs_read", "doctor", "source_search", "source_read"}:
+            self.set_offline_output(summary)
+        self.update_actions()
         self.display(summary, error or ("\n".join(result["lines"]) if name == "logs_read" and not error else result), tone)
-        if name == "logs_read" and not error and result.get("exists"):
-            self.details_open.set(True)
-            self.toggle_details()
 
     def close(self):
         if self.busy:
@@ -427,24 +541,37 @@ def main():
         import time
         root.geometry("1100x860")
         started = time.monotonic()
+        default_page = app.tabs.tab(app.tabs.select(), "text")
+        profile_was_present = app.toolkit.profile.exists() if app.toolkit else None
         def verify():
             if app.busy and time.monotonic() - started < 30:
                 root.after(100, verify)
                 return
             bounds = {}
-            for label, page in (("connection", app.connection), ("tools", app.tools)):
+            def inside(widget, page):
+                return bool(widget.winfo_ismapped() and widget.winfo_width() > 1 and widget.winfo_height() > 1
+                            and page.winfo_rootx() <= widget.winfo_rootx()
+                            and widget.winfo_rootx() + widget.winfo_width() <= page.winfo_rootx() + page.winfo_width()
+                            and page.winfo_rooty() <= widget.winfo_rooty()
+                            and widget.winfo_rooty() + widget.winfo_height() <= page.winfo_rooty() + page.winfo_height())
+            for label, page in (("offline", app.offline), ("connection", app.connection), ("tools", app.tools)):
                 app.tabs.select(page)
                 root.update_idletasks()
                 buttons = [button for button in app.actions if str(button).startswith(str(page) + ".") and not str(button).startswith(str(app.lua_page) + ".")]
-                bounds[label] = all(button.winfo_ismapped() and page.winfo_rootx() <= button.winfo_rootx() and button.winfo_rootx() + button.winfo_width() <= page.winfo_rootx() + page.winfo_width() and button.winfo_rooty() + button.winfo_height() <= page.winfo_rooty() + page.winfo_height() for button in buttons)
+                bounds[label] = all(inside(button, page) for button in buttons)
+                if label == "offline":
+                    bounds["offline_results"] = inside(app.results, page)
+                    bounds["offline_output"] = inside(app.offline_output, page)
+                    bounds["offline_search"] = inside(app.search_entry, page)
             app.tool_tabs.select(app.lua_page)
             root.update_idletasks()
             bounds["lua"] = app.trust_control.winfo_ismapped() and all(button.winfo_ismapped() for button in app.actions if str(button).startswith(str(app.lua_page) + "."))
-            bridge = app.toolkit.profile / "mods/PZToolkitBridge" if app.toolkit else None
-            result = {"ok": bool(app.last_result and "error" not in app.last_result), "window_mapped": bool(root.winfo_ismapped()), "bridge_assets": bool(bridge and (bridge / "42/media/lua/client/PZToolkitBridge.lua").is_file()), "branding_loaded": app.header_logo.width() > 0, "display_font": app.display_family, "tabs": [app.tabs.tab(page, "text") for page in app.tabs.tabs()], "navigation": list(app.navigation), "details_collapsed": not app.details_open.get(), "tools": list(app.toolkit.tools()) if app.toolkit else [], "bounds": bounds}
+            bridge = Path(__file__).parent / "assets/bridge/42/media/lua/client/PZToolkitBridge.lua"
+            profile_created = bool(profile_was_present is False and app.toolkit and app.toolkit.profile.exists())
+            result = {"ok": bool(app.last_result and "error" not in app.last_result), "window_mapped": bool(root.winfo_ismapped()), "bridge_assets": bridge.is_file(), "default_page": default_page, "profile_created": profile_created, "branding_loaded": app.header_logo.width() > 0, "display_font": app.display_family, "tabs": [app.tabs.tab(page, "text") for page in app.tabs.tabs()], "navigation": list(app.navigation), "details_collapsed": not app.details_open.get(), "tools": list(app.toolkit.tools()) if app.toolkit else [], "bounds": bounds}
             atomic_text(args.smoke_report, json.dumps(result))
             app.close()
-        root.after(150, app.connect)
+        root.after(150, lambda: app.dispatch("doctor"))
         root.after(250, verify)
     root.mainloop()
     return 0

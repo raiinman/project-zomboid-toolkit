@@ -260,18 +260,20 @@ class Toolkit:
             body = match.group(1) + f"    mod = {identifier},\n"
             atomic_text(path, text[:match.start(1)] + body + text[match.end(1):])
 
-    def _ensure_game_stopped(self) -> None:
-        """Refuse bridge deployment or another launch while the tracked game runs."""
+    def _tracked_game_running(self) -> bool | None:
+        """Inspect only the recorded game PID, without desktop input or signals on Windows."""
         pid_file = self._profile_path("pzt-game.pid")
         if pid_file.exists():
             pid = int(pid_file.read_text())
+            if pid <= 0:
+                raise ValueError("Invalid tracked game process ID")
             if os.name == "nt":
                 # Windows signal 0 is CTRL_C_EVENT, not a process-existence probe.
                 try:
                     listing = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
-                                             capture_output=True, text=True, check=True, timeout=10,
+                                             capture_output=True, text=True, check=True, timeout=2,
                                              creationflags=subprocess.CREATE_NO_WINDOW)
-                except subprocess.SubprocessError as exc:
+                except (OSError, subprocess.SubprocessError) as exc:
                     raise ValueError("Could not inspect the tracked game process") from exc
                 running = any(len(row) > 1 and row[1] == str(pid) and
                               row[0].lower() == "projectzomboid64.exe"
@@ -280,10 +282,21 @@ class Toolkit:
                 try:
                     os.kill(pid, 0)
                     running = True
-                except OSError:
+                except ProcessLookupError:
                     running = False
-            if running:
-                raise ValueError("A tracked game process is already running")
+                except OSError as exc:
+                    raise ValueError("Could not inspect the tracked game process") from exc
+            return running
+        return None
+
+    def _ensure_game_stopped(self) -> None:
+        """Refuse bridge deployment or another launch while the tracked game runs."""
+        if self._tracked_game_running():
+            raise ValueError("A tracked game process is already running")
+
+    def _profile_prepared(self) -> bool:
+        marker = self._profile_path(".pztoolkit-profile")
+        return marker.is_file() and marker.read_text(encoding="utf-8") == OWNER
 
     def profile_prepare(self) -> dict:
         """Initialize an isolated game profile and install/enable the local debug bridge."""
@@ -389,10 +402,13 @@ class Toolkit:
         """Read the tail of console.txt from the isolated profile only."""
         if not 1 <= lines <= 500:
             raise ValueError("lines must be 1-500")
-        self._owned_profile()
+        if not self._profile_prepared():
+            return {"lines": [], "exists": False, "reason": "profile_not_prepared",
+                    "message": "No Toolkit test-session log is available yet. Offline source tools still work."}
         path = self._profile_path("console.txt")
         if not path.exists():
-            return {"lines": [], "exists": False}
+            return {"lines": [], "exists": False, "reason": "log_not_created",
+                    "message": "No test-session log exists yet. Start a test session to create one."}
         with path.open("rb") as stream:
             stream.seek(max(0, path.stat().st_size - 256 * 1024))
             content = stream.read(256 * 1024).decode("utf-8", errors="replace")
@@ -400,7 +416,9 @@ class Toolkit:
 
     def bridge_status(self) -> dict:
         """Check a fresh heartbeat from the debug bridge in a loaded local test world."""
-        self._owned_profile()
+        if not self._profile_prepared():
+            return {"ready": False, "reason": "profile_not_prepared", "game_state": "unknown",
+                    "next_step": "Offline tools are available. Launch Project Zomboid (test profile) when you need live controls."}
         try:
             status = read_json(self._profile_path("Lua/pzt-status.txt"))
             timestamp = status.get("timestamp_ms")
@@ -408,7 +426,18 @@ class Toolkit:
             ready = status.get("ready") is True and math.isfinite(age) and -1000 <= age <= 5000
         except (OSError, ValueError):
             status, ready = {}, False
-        return {**status, "ready": ready, "next_step": None if ready else
+        game_state = "world_loaded" if ready else "unknown"
+        if not ready:
+            try:
+                tracked = self._tracked_game_running()
+                game_state = "running" if tracked is True else "closed" if tracked is False else "unknown"
+            except (OSError, ValueError):
+                pass
+        if game_state == "closed":
+            status = {"reason": "game_closed"}
+            return {**status, "ready": False, "game_state": game_state,
+                    "next_step": "Offline tools are available. Launch Project Zomboid (test profile) to use live controls."}
+        return {**status, "ready": ready, "game_state": game_state, "next_step": None if ready else
                 "Enable the bridge in the isolated profile and keep a debug single-player world loaded and unpaused"}
 
     def harness_run(self, scenario: str, timeout: float = 30) -> dict:

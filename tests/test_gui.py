@@ -49,13 +49,13 @@ def wait(app):
 
 
 def test_toolbelt_opens_without_mod_folder_or_scenario_controls(app):
-    assert [app.tabs.tab(page, "text") for page in app.tabs.tabs()] == ["Connection", "Game tools"]
+    assert [app.tabs.tab(page, "text") for page in app.tabs.tabs()] == ["Offline tools", "Connection", "Game tools"]
     labels = [button.cget("text") for button in app.actions]
     assert "Connect to game" in labels
     assert "Launch Project Zomboid (test profile)" in labels
     assert not any(word in label.lower() for label in labels for word in ("create mod", "folder", "deploy", "scenario", "save setup"))
     assert not app.details_open.get()
-    assert "Not checked" in app.status.get()
+    assert "Offline tools are ready" in app.status.get()
     assert not app.connected
     assert set(app.toolkit.tools()) == set(GAME_TOOL_NAMES)
     assert not app.toolkit.workspace.exists()
@@ -67,7 +67,7 @@ def test_connect_installs_only_bridge_and_preserves_saved_configuration(app):
     press(app, "Connect to game")
     result = wait(app)
     assert not result["ready"]
-    assert "Not connected" in app.status.get()
+    assert "Live game not connected" in app.status.get()
     assert app.config.read_bytes() == before
     assert (app.toolkit.profile / "mods/PZToolkitBridge/42/mod.info").is_file()
     assert not app.toolkit.workspace.exists()
@@ -144,16 +144,18 @@ def test_stale_connection_is_not_reported_as_connected(app):
     press(app, "Check connection")
     assert wait(app)["ready"] is False
     assert not app.connected
-    assert "Not connected" in app.status.get()
+    assert "Live game not connected" in app.status.get()
 
 
 @pytest.mark.parametrize(("identifier", "label", "description"), EDITORS)
 def test_editor_buttons_use_shared_allowlisted_api(app, monkeypatch, identifier, label, description):
     calls = []
-    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or {"ok": True, "status": "passed", "message": "Requested editor"})
+    app.connected = True
+    app.update_actions()
+    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or ({"ready": True} if name == "bridge_status" else {"ok": True, "status": "passed", "message": "Requested editor"}))
     press(app, label)
     wait(app)
-    assert calls == [("editor_open", {"editor": identifier})]
+    assert calls == [("bridge_status", {}), ("editor_open", {"editor": identifier})]
     assert "requested" in app.status.get()
     assert "visibility is not verified" in app.status.get()
 
@@ -161,22 +163,26 @@ def test_editor_buttons_use_shared_allowlisted_api(app, monkeypatch, identifier,
 @pytest.mark.parametrize(("label", "enabled"), [("God mode on", True), ("God mode off", False)])
 def test_god_mode_buttons_send_explicit_boolean(app, monkeypatch, label, enabled):
     calls = []
-    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or {"ok": True, "status": "passed", "message": "God mode changed"})
+    app.connected = True
+    app.update_actions()
+    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or ({"ready": True} if name == "bridge_status" else {"ok": True, "status": "passed", "message": "God mode changed"}))
     press(app, label)
     wait(app)
-    assert calls == [("god_mode", {"enabled": enabled})]
+    assert calls == [("bridge_status", {}), ("god_mode", {"enabled": enabled})]
 
 
 def test_inline_lua_requires_trust_and_has_no_scenario_file(app, monkeypatch):
     calls = []
-    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or {"ok": True, "status": "passed", "message": "fixture result"})
+    app.connected = True
+    app.update_actions()
+    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or ({"ready": True} if name == "bridge_status" else {"ok": True, "status": "passed", "message": "fixture result"}))
     press(app, "Run Lua command")
     assert not app.busy
     assert "trust checkbox" in app.status.get()
     app.trust_control.invoke()
     press(app, "Run Lua command")
     wait(app)
-    assert calls == [("lua_execute", {"code": "return 'Hello from the game'\n"})]
+    assert calls == [("bridge_status", {}), ("lua_execute", {"code": "return 'Hello from the game'\n"})]
     assert not app.toolkit.workspace.exists()
     assert "fixture result" in app.status.get()
 
@@ -209,7 +215,7 @@ def test_worker_serializes_actions_and_keeps_event_pump_alive(app, monkeypatch):
     wait(app)
     assert calls == ["bridge_status"]
     assert ticks
-    assert all(str(button.cget("state")) == "normal" for button in app.actions)
+    assert all(str(button.cget("state")) == ("disabled" if button in app.live_actions else "normal") for button in app.actions)
     assert app.root.tk.call("after", "info", app.poll_handle)
 
 
@@ -219,6 +225,8 @@ def test_inline_game_transport_reports_pass_failure_and_unknown_without_workspac
     wait(app)
     lua = app.toolkit.profile / "Lua"
     (lua / "pzt-status.txt").write_text(json.dumps({"ready": True, "timestamp_ms": time.time() * 1000}))
+    press(app, "Check connection")
+    wait(app)
     app.editor.delete("1.0", "end")
     app.editor.insert("1.0", "return 'inline test'")
     app.editor.edit_modified(False)
@@ -268,8 +276,8 @@ def test_log_read_shows_plain_logs_in_details(app, monkeypatch):
     monkeypatch.setattr(app.toolkit, "call", lambda *args: {"exists": True, "lines": ["line one", "line two"]})
     press(app, "Read game logs")
     wait(app)
-    assert app.details_open.get()
-    assert app.output.get("1.0", "end-1c") == "line one\nline two"
+    assert not app.details_open.get()
+    assert app.offline_output.get("1.0", "end-1c") == "line one\nline two"
 
 
 def test_theme_has_legible_contrast_and_no_green(app):
@@ -299,7 +307,7 @@ def test_repeated_edit_trust_edit_always_revokes_trust(app):
     assert not app.trusted.get()
     assert app.lua_dirty
     assert not app.editor.edit_modified()
-    press(app, "Run Lua command")
+    app.run_lua()
     assert not app.busy
     assert "trust checkbox" in app.status.get()
 
@@ -307,7 +315,7 @@ def test_repeated_edit_trust_edit_always_revokes_trust(app):
 def test_trusted_code_snapshot_blocks_edits_before_modified_event(app):
     app.trust_control.invoke()
     app.editor.insert("end", "-- changed without pumping events\n")
-    press(app, "Run Lua command")
+    app.run_lua()
     assert not app.busy
     assert not app.trusted.get()
 
@@ -339,3 +347,78 @@ def test_no_compiler_keeps_builtin_tools_available_and_explains_lua(app, monkeyp
     app.run_lua()
     assert not app.busy
     assert 'cannot run custom Lua' in app.status.get()
+
+
+def test_offline_tools_work_immediately_without_connection_or_files(app):
+    game = app.toolkit.game
+    script = game / "media/lua/client/Example.lua"
+    script.parent.mkdir(parents=True)
+    script.write_text("local player = getPlayer()\nreturn player\n")
+    before = app.config.read_bytes()
+    press(app, "Check settings")
+    assert wait(app)["game_found"]
+    app.query.set("getPlayer")
+    press(app, "Search scripts")
+    assert wait(app)["matches"][0]["path"] == "lua/client/Example.lua"
+    app.results.selection_set("0")
+    app.choose_source()
+    press(app, "Read script")
+    assert wait(app)["lines"][0] == "local player = getPlayer()"
+    assert "1: local player" in app.offline_output.get("1.0", "end")
+    assert not app.details_open.get()
+    assert app.config.read_bytes() == before
+    assert not app.toolkit.profile.exists()
+    assert not app.toolkit.workspace.exists()
+    assert not app.connected
+
+
+def test_missing_log_is_normal_and_does_not_create_profile(app):
+    press(app, "Read game logs")
+    assert wait(app)["exists"] is False
+    assert "normal" in app.status.get()
+    assert "Launch" not in app.status.get()
+    assert not app.toolkit.profile.exists()
+    assert all(str(b.cget("state")) == "disabled" for b in app.live_actions)
+    press(app, "Check settings")
+    assert "error" not in wait(app)
+
+
+def test_live_action_rechecks_connection_and_blocks_stale_dispatch(app, monkeypatch):
+    calls = []
+    app.connected = True
+    app.update_actions()
+    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append(name) or {"ready": False})
+    press(app, "God mode on")
+    wait(app)
+    assert calls == ["bridge_status"]
+    assert not app.connected
+    assert "Offline tools are still available" in app.status.get()
+    assert all(str(b.cget("state")) == "disabled" for b in app.live_actions)
+    assert str(next(b for b in app.actions if b.cget("text") == "Read game logs").cget("state")) == "normal"
+
+
+def test_first_offline_use_detects_settings_without_bridge_or_profile(tk_root, tmp_path, monkeypatch):
+    import pztoolkit.gui as gui
+    monkeypatch.setattr(gui, "detect_folders", lambda *args: {"suggested": {"game_dir": str(tmp_path / "game"), "workspace_dir": str(tmp_path / "workspace"), "profile_dir": str(tmp_path / "profile")}})
+    root = tk.Toplevel(tk_root)
+    root.withdraw()
+    application = Application(root, tmp_path / "settings/config.json")
+    try:
+        press(application, "Check settings")
+        assert "error" not in wait(application)
+        assert application.config.exists()
+        assert application.toolkit is not None
+        assert not application.toolkit.profile.exists()
+        assert not application.toolkit.workspace.exists()
+        assert not application.connected
+    finally:
+        application.close()
+
+
+@pytest.mark.parametrize(("state", "expected"), [("closed", "Game closed."), ("unknown", "Live game not connected."), ("running", "Live game not connected.")])
+def test_only_proven_exit_says_game_closed(app, monkeypatch, state, expected):
+    monkeypatch.setattr(app.toolkit, "call", lambda *args: {"ready": False, "game_state": state})
+    press(app, "Check connection")
+    wait(app)
+    assert app.status.get().startswith(expected)
+    assert "Offline tools are ready" in app.status.get()

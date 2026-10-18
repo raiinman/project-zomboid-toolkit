@@ -13,10 +13,27 @@ measured test and runtime evidence.
 | Existing connection | Reuse saved configuration and existing isolated profile | Config/default-path checks, token preservation and backup fixtures |
 | Helper and launch | Install bridge, launch real game in debug, never require mod creation | Containment, helper upgrade and launch argument tests |
 | Direct game actions | Inline Lua, verified god-mode toggle and allowlisted debug editors | Mock transport, error/timeout and editor ID tests |
-| Beginner GUI | Explain connect, launch, in-game activation and check; tools need no folders or files | Native-widget tests and actual rendered inspection |
+| Beginner GUI | Open on Offline tools; explain saved logs/settings/script search and the separate live connection path | Game-closed GUI behavior tests, readiness gating and distinct rendered evidence |
 | Artwork | Retain approved logo, use original decrepit workshop art, no green or figures | Asset checks plus native rendered review |
 | Windows delivery | Frozen app/CLI/MCP, per-user install, preserved settings and Start menu entry | Executable smoke checks and PC-side installation verification |
 | Live acceptance | Actual bridge, startup god mode, Lua outcomes and visible editor windows | Captured debug single-player evidence with game version |
+
+## Offline-first update acceptance
+
+These requirements describe the update; completion belongs in validation evidence.
+
+- Open on **Offline tools** with saved settings, logs and installed script search/read.
+- Keep these actions available when the test game is closed or disconnected.
+- Explain missing logs as normal saved-history absence, not a connection failure.
+- Explain that live god mode/editors need a loaded, unpaused debug single-player
+  world with the bridge enabled; a main menu is insufficient.
+- Disable live buttons until readiness is checked, and recheck before dispatch.
+- Keep Lua compiler support separate from readiness and predefined game commands.
+- Build in clean CI, scan the exact bundle and ZIP, then install without desktop
+  input or GUI/game/Codex restarts. Preserve the current working MCP registration
+  for this GUI-only change and verify offline behavior through a hidden probe.
+- Record source tests, frozen GUI coverage, actual-PC Defender/install evidence
+  and any deferred visual review separately. Do not imply a rendered user-PC check.
 
 ## Current acceptance checklist
 

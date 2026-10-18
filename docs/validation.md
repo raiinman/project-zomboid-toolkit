@@ -1,5 +1,16 @@
 # Validation record
 
+## v0.4.3 offline-first update
+
+The local offline suite passed **232 tests**, including 36 withdrawn-window Tk
+cases. Lockfile, dependency compatibility, source compilation and diff checks
+passed. Independent GUI review found no blocking issues. The default Offline
+tools page exercises shared logs, search, source excerpts and settings without
+bridge installation or game launch. Fresh readiness guards protect live actions.
+Mapped layout verification runs only on the isolated Windows CI runner. Candidate
+Defender scan and installation evidence will be recorded after those gates run.
+No visible app launch or live game/editor acceptance was performed on the PC.
+
 ## v0.4.2 installed Windows candidate
 
 The clean-build/provenance, optional trusted-signing and normal Defender scan

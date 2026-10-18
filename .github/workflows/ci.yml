@@ -37,6 +37,9 @@ jobs:
         run: uv run --no-sync python -m compileall -q src tests
       - name: Run offline contracts and simulated Lua bridge
         run: uv run --no-sync python -m pytest -q
+      - name: Verify source GUI offline layout on isolated runner
+        if: matrix.os == 'windows-latest' && matrix.python == '3.11'
+        run: uv run --no-sync python packaging/verify_gui.py --source
       - name: Build standalone Windows executable
         id: clean_build
         if: matrix.os == 'windows-latest' && matrix.python == '3.11'

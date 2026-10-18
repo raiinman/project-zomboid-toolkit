@@ -70,7 +70,8 @@ components:
 A readable game toolbelt inside a derelict workshop. Worn industrial artwork and the approved distressed Dead Signal Interactive logo carry the atmosphere; instructions and native controls stay quiet, clear and intact. The user rejected green and creature imagery.
 
 The app serves the existing game and the user's existing work. Its visual
-hierarchy leads from a clear connection action to useful game tools. It does not
+hierarchy starts with useful offline tools and makes connection optional until
+live controls are needed. It does not
 borrow the complexity of an editor or turn internal transport files into tasks.
 
 **Key Characteristics:**
@@ -105,7 +106,10 @@ presented through sidebar buttons rather than duplicate native tabs.
 
 A contained 130-pixel workshop image is an atmosphere surface, not a control
 background. Technical output and advanced code disclose deliberately. The exact
-current pages and their tasks belong in the desktop surface brief.
+pages are **Offline tools**, **Connection** and **Game tools**. Offline tools is
+the initial page; it contains saved logs, settings inspection and bounded script
+search/read. Connection explains launch and bridge readiness. Game tools holds
+readiness-gated god mode and editors, with Lua in a separate advanced tab.
 
 ## Elevation & Depth
 
@@ -125,7 +129,9 @@ original artwork rather than in button silhouettes or text.
 
 ### Buttons
 
-The next connection action is prominent. Secondary controls use dark surfaces;
+Offline actions remain available without a heartbeat. On Connection, the next
+connection action is prominent. Live buttons stay disabled until bridge readiness
+is reported; custom Lua also requires compiler capability. Secondary controls use dark surfaces;
 keyboard focus uses the amber accent. Disabled and busy states prevent duplicate
 submissions. Plain next-step instructions support the next action without proving that it
 succeeded.
@@ -144,7 +150,11 @@ Do not add a mod manager or an authoring tour to the navigation.
 
 ### Status
 
-Show useful plain-language results, including a next action when not connected.
+Show **Game closed** only when supported by process evidence; otherwise use
+**Live game not connected**. Both states explicitly leave offline tools available.
+Explain that live controls need a loaded, unpaused debug single-player world with
+PZ Toolkit Bridge enabled. Saved logs are history, not proof of a current session.
+Keep Lua compiler availability separate from connection readiness.
 Warning and error feedback must not look like passing game evidence. Request
 completion cannot certify that a game editor window appeared.
 

@@ -42,7 +42,9 @@ away or interpret packaging/signing changes as antivirus clearance.
 ## Verification
 
 `tests/test_packaging.py` checks origin gates, receipt failures and distribution
-contracts without executing application binaries. Frozen probes run only after
+contracts without executing application binaries. Source GUI layout smoke runs
+only on the isolated Windows CI runner and uses fixture settings without profile
+preparation. Local Tk tests remain withdrawn. Frozen probes run only after
 the scan gate succeeds in CI; native game acceptance is separate.
 
 ## Child DOX Index

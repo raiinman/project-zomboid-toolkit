@@ -2,7 +2,8 @@
 
 ## Objective and scope
 
-Connect the desktop app, CLI and Codex/MCP to a running debug single-player game.
+Support useful desktop, CLI and Codex/MCP tools while the game is closed, then
+connect to a running debug single-player world for live game controls.
 The user edits an existing mod; toolkit use must not require mod creation, a
 folder wizard, a new workspace or saved scenario files. The game and Steam retain
 mod-management authority. This is a game/debug/editor toolbelt, without a claim
@@ -81,7 +82,7 @@ the envelope and correlates bounded synchronous responses. Local tokens grant
 game-level code execution, not a Lua sandbox.
 
 Only a loaded debug single-player session is accepted, with both `isClient()`
-and `isServer()` false. Readiness includes compiler capability: `loadstring` was
+and `isServer()` false. Custom Lua has a separate compiler capability: `loadstring` was
 disabled in 42.20.4 and restored in 42.21. API documentation alone does not prove
 a function is enabled in a particular hotfix. OnTick heartbeat/execution can
 stall while paused. Lua must terminate; the host timeout cannot interrupt code
@@ -95,9 +96,24 @@ incomplete and must not be described as a complete execution history.
 
 ## Desktop contract
 
-Connect first, then use game tools. Explain the helper, real game launch,
-in-game activation and loaded-world check in plain language. Keep one useful
-next action prominent. Existing settings load automatically. No mod creation,
+Open on **Offline tools**, not a mandatory connection flow. Saved log reading,
+settings inspection and installed script search/read work without a running game.
+Use **Read game logs**, **Check settings**, **Search scripts** and **Read script**
+labels. Logs are saved history and may be absent; source tools require installed
+files at the saved location. These tools do not launch the game or write game files.
+
+**Connection** is for live controls. Explain the helper, real game launch,
+in-game activation and loaded-world check in plain language. Show **Game closed**
+only with supporting process evidence, otherwise **Live game not connected**.
+Neither state blocks offline tools. God mode and editor actions need a fresh
+ready bridge from a loaded, unpaused debug single-player world. Keep them disabled
+until readiness is reported, and check readiness again before dispatch. A running
+executable or main menu alone is insufficient. Advanced Lua additionally needs
+compiler support; its absence must not disable predefined god/editor commands.
+
+Keep one useful next action prominent. Existing settings load automatically.
+Missing settings may be detected internally when an offline action needs them;
+this must not install the bridge, launch the game or create a mod project. No
 folder selection, deployment tour or scenario saving is required. Technical
 output and inline Lua are disclosed deliberately; trust remains explicit.
 
