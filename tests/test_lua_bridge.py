@@ -33,7 +33,23 @@ def bridge():
         function getDebug() return debug_enabled end
         function isClient() return multiplayer end
         function isServer() return server end
-        function getPlayer() if player_present then return {} end end
+        function make_player()
+            return {
+                god_mode = false, god_mode_calls = 0,
+                setGodMod = function(self, value)
+                    self.god_mode_calls = self.god_mode_calls + 1
+                    if self.set_error then error(self.set_error) end
+                    if not self.ignore_set then self.god_mode = value end
+                end,
+                isGodMod = function(self)
+                    if self.read_error then error(self.read_error) end
+                    return self.god_mode
+                end
+            }
+        end
+        player = make_player()
+        function getPlayer() if player_present then return player end end
+        function getSpecificPlayer(id) if id == 0 then return getPlayer() end end
         function getCore() return {getVersion = function() return '42.20.0' end} end
         function getFileReader(path)
             local value = files[path]
@@ -60,7 +76,10 @@ def bridge():
                 close = function() closed_handles = closed_handles + 1 end
             }
         end
-        Events = { OnTick = { Add = function(fn) tick = fn end } }
+        Events = {
+            OnTick = { Add = function(fn) tick = fn end },
+            OnCreatePlayer = { Add = function(fn) create_player = fn end }
+        }
         """
     )
     lua.execute(SOURCE.read_text(encoding="utf-8"))
@@ -179,6 +198,10 @@ def test_json_escaping_and_status(bridge):
         "timestamp_ms": 1000000,
         "build": "42.20.0",
         "lua_compiler": True,
+        "debug": True,
+        "single_player": True,
+        "player_loaded": True,
+        "god_mode": True,
         "reason": "ready",
     }
 
@@ -212,3 +235,108 @@ def test_oversized_scenario_results_are_explicit_failures(bridge, source):
         "message": "scenario result exceeds 32768 bytes",
     }
     assert len(bridge.globals().files["pzt-response.txt"].encode("utf-8")) < 1024
+
+
+def status(bridge):
+    bridge.globals().now += 1000
+    bridge.globals().tick()
+    return json.loads(bridge.globals().files["pzt-status.txt"])
+
+
+def test_startup_god_mode_handles_spawn_respawn_and_index_only_event(bridge):
+    state = bridge.globals()
+    state.create_player(0, state.player)
+    assert state.player.god_mode is True
+    assert state.player.god_mode_calls == 1
+    state.tick()
+    assert state.player.god_mode_calls == 1
+    bridge.execute("player = make_player()")
+    state.create_player(0)
+    assert state.player.god_mode is True
+    assert state.player.god_mode_calls == 1
+    assert status(bridge)["god_mode"] is True
+
+
+def test_startup_tick_fallback_and_bridge_reload(bridge):
+    state = bridge.globals()
+    state.tick()
+    assert state.player.god_mode is True
+    assert state.player.god_mode_calls == 1
+    bridge.execute("player.god_mode = false")
+    bridge.execute(SOURCE.read_text(encoding="utf-8"))
+    state.tick()
+    assert state.player.god_mode is True
+    assert state.player.god_mode_calls == 2
+
+
+def test_manual_god_mode_disable_survives_ticks_and_duplicate_spawn_event(bridge):
+    state = bridge.globals()
+    state.create_player(0, state.player)
+    bridge.execute("player.god_mode = false")
+    state.create_player(0, state.player)
+    assert status(bridge)["god_mode"] is False
+    assert state.player.god_mode_calls == 1
+
+
+@pytest.mark.parametrize("guard", ["debug", "client", "server", "player", "token", "empty_token"])
+def test_god_mode_requires_authenticated_local_debug_player(bridge, guard):
+    state = bridge.globals()
+    if guard == "debug":
+        state.debug_enabled = False
+    elif guard == "client":
+        state.multiplayer = True
+    elif guard == "server":
+        state.server = True
+    elif guard == "player":
+        state.player_present = False
+    else:
+        state.files["pzt-token.txt"] = "" if guard == "empty_token" else None
+    state.create_player(0)
+    assert status(bridge)["god_mode"] is False
+    assert state.player.god_mode_calls == 0
+    assert state.player.god_mode is False
+
+
+def test_guard_can_become_ready_after_creation(bridge):
+    state = bridge.globals()
+    state.files["pzt-token.txt"] = None
+    state.create_player(0, state.player)
+    state.files["pzt-token.txt"] = "secret"
+    assert status(bridge)["god_mode"] is True
+    assert state.player.god_mode_calls == 1
+
+
+@pytest.mark.parametrize("failure", ["set_error", "read_error", "ignore_set"])
+def test_startup_god_mode_failure_is_visible_without_false_success_or_retries(bridge, failure):
+    state = bridge.globals()
+    state.player[failure] = True if failure == "ignore_set" else "API failed"
+    state.create_player(0, state.player)
+    result = status(bridge)
+    assert result["god_mode"] is False
+    assert result["god_mode_error"]
+    assert "Startup god mode failed" in state.printed[1]
+    status(bridge)
+    assert state.player.god_mode_calls == 1
+
+
+def test_missing_compiler_does_not_block_startup_god_mode(bridge):
+    state = bridge.globals()
+    state.loadstring = None
+    result = status(bridge)
+    assert result["ready"] is False
+    assert result["reason"] == "Lua compiler unavailable"
+    assert result["god_mode"] is True
+
+
+def test_god_mode_status_observes_actual_state_and_rejects_lost_authorization(bridge):
+    state = bridge.globals()
+    assert status(bridge)["god_mode"] is True
+    state.player.read_error = "read unavailable"
+    result = status(bridge)
+    assert result["god_mode"] is False
+    assert "read unavailable" in result["god_mode_error"]
+    state.player.read_error = None
+    assert status(bridge)["god_mode"] is True
+    state.debug_enabled = False
+    assert status(bridge)["god_mode"] is False
+    assert state.player.god_mode_calls == 1

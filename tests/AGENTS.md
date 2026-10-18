@@ -5,13 +5,16 @@ Verify tool contracts and regression behavior independently of game ownership.
 ## Ownership
 
 Offline unit/integration tests, fixtures, and protocol parity checks.
-`test_gui.py` owns real Windows Tk widget flows with temporary workspaces and
-simulated bridge responses, including responsive waits and workspace switching.
-It also verifies sidebar navigation, guide arrows, successful-action advancement,
-completion and failure gating, readable contrast and the no-green control palette.
+`test_gui.py` owns native Windows Tk flows for Connection and Game tools,
+worker responsiveness, trusted inline Lua, built-in editors, actual status,
+readable controls and absence of mod/folder/scenario setup UI.
+`test_inline_tools.py` owns inline transport without workspace/report creation,
+editor allowlists, strict god-mode booleans and tracked-game install guards.
 `test_discovery.py` owns fixture-based Steam/common-folder detection, ambiguity,
-read bounds and preservation checks. GUI tests cover first-launch detection,
-preview-only settings and visible discovery failures.
+read bounds and preservation checks for internal and legacy discovery.
+Lua mocks also cover god-mode spawn/respawn/fallback, guarded startup, manual
+disablement and API failure reporting. Launch fixtures cover changed bridge
+refresh with backup/token preservation and no redeploy of unchanged scripts.
 
 ## Local Contracts
 

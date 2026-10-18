@@ -14,8 +14,10 @@ GUI PNG artwork, the studio icon, the bundled display font and its license.
 - Environmental horror only. Do not add actual aliens, predators, zombies or
   creature silhouettes to application artwork.
 - Keep the approved distressed logo PNG unchanged for the sidebar GUI. Follow
-  DESIGN.md's charcoal, ivory and studio-red palette; the user rejected green.
-  The retained facility panorama is not displayed by the current GUI.
+  DESIGN.md's soot, steel, rust, ivory and amber palette; the user rejected green.
+  `derelict-workshop.png` is the current generated environment, shown in a
+  contained home-page banner away from controls. Its exact prompt is embedded
+  and retained in `derelict-workshop-prompt.txt`. The old facility image is unused.
 - Keep artwork away from controls and guide arrows, preserving literal feedback.
 - Retain the font's SIL OFL license and its source provenance.
 - Include these assets in wheel and frozen GUI builds. Load fonts privately in
@@ -31,6 +33,8 @@ assets outside published commits when they belong to the user's separate kit.
 
 Run native GUI regression tests and the frozen GUI smoke check. They must load
 the real images and font. Asset/source checks do not establish live game testing.
+Preserve the approved logo bytes, even when metadata tooling requests embedding
+an origin. Its provenance stays in README.md/prompts.md instead.
 
 ## Child DOX Index
 

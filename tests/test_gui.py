@@ -1,5 +1,4 @@
-"""Real Tk widgets and simulated game responses, never the installed game."""
-
+"""Real Tk widgets against temporary profiles and simulated game replies."""
 import json
 import sys
 import threading
@@ -8,8 +7,9 @@ import time
 import pytest
 
 tk = pytest.importorskip("tkinter")
-from pztoolkit.gui import Application
 from tkinter import ttk
+from pztoolkit.core import GAME_TOOL_NAMES
+from pztoolkit.gui import Application, EDITORS
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="Native Windows GUI acceptance")
 
@@ -24,20 +24,19 @@ def tk_root():
 
 @pytest.fixture
 def app(tmp_path, tk_root):
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"game_dir": "game", "workspace_dir": "workspace", "profile_dir": "profile"}))
     root = tk.Toplevel(tk_root)
     root.withdraw()
-    application = Application(root, tmp_path / "config.json", autodetect=False)
-    for key, name in (("game_dir", "game"), ("workspace_dir", "workspace"), ("profile_dir", "profile")):
-        application.paths[key].set(str(tmp_path / name))
-    application.save_setup()
+    application = Application(root, config)
     yield application
     application.editor.edit_modified(False)
+    application.lua_dirty = False
     application.close()
 
 
 def press(app, label):
-    button = next(button for button in app.actions if button.cget("text") == label)
-    button.invoke()
+    next(button for button in app.actions if button.cget("text") == label).invoke()
 
 
 def wait(app):
@@ -45,105 +44,192 @@ def wait(app):
     while app.busy and time.monotonic() < deadline:
         app.root.update()
         time.sleep(0.01)
-    assert not app.busy, "GUI did not deliver background job result"
+    assert not app.busy, "GUI did not deliver the worker result"
     return app.last_result
 
 
-def create(app):
-    app.mod_name.set("GuiExample")
-    press(app, "Create mod")
-    assert wait(app)["id"] == "GuiExample"
+def test_toolbelt_opens_without_mod_folder_or_scenario_controls(app):
+    assert [app.tabs.tab(page, "text") for page in app.tabs.tabs()] == ["Connection", "Game tools"]
+    labels = [button.cget("text") for button in app.actions]
+    assert "Connect to game" in labels
+    assert "Launch Project Zomboid (test profile)" in labels
+    assert not any(word in label.lower() for label in labels for word in ("create mod", "folder", "deploy", "scenario", "save setup"))
+    assert not app.details_open.get()
+    assert "Not checked" in app.status.get()
+    assert not app.connected
+    assert set(app.toolkit.tools()) == set(GAME_TOOL_NAMES)
+    assert not app.toolkit.workspace.exists()
+    assert not app.toolkit.profile.exists()
 
 
-def test_create_check_deploy_from_widgets(app):
-    press(app, "Prepare test profile")
-    assert wait(app)["ok"]
-    create(app)
-    assert app.mod_list.selection() == ("mods/GuiExample",)
-    press(app, "Check selected")
-    assert wait(app)["ok"]
-    press(app, "Deploy to test profile")
-    result = wait(app)
-    assert result["restart_required"]
-    assert (app.toolkit.profile / "mods/GuiExample/42/mod.info").is_file()
-    assert app.loaded_scenario == "scenarios/GuiExample_smoke.lua"
-
-
-def test_unsaved_setup_blocks_old_profile_actions(app, tmp_path):
-    app.paths["profile_dir"].set(str(tmp_path / "different-profile"))
-    press(app, "Prepare test profile")
-    assert not app.busy
-    assert "Save setup" in app.status.get()
-    assert not (tmp_path / "profile").exists()
-    assert not (tmp_path / "different-profile").exists()
-    press(app, "Save setup")
-    press(app, "Prepare test profile")
-    assert wait(app)["ok"]
-    assert (tmp_path / "different-profile/.pztoolkit-profile").is_file()
-
-
-def test_invalid_setup_preserves_saved_config(app):
+def test_connect_installs_only_bridge_and_preserves_saved_configuration(app):
     before = app.config.read_bytes()
-    app.paths["profile_dir"].set(str(app.toolkit.game / "overlap"))
-    press(app, "Save setup")
+    press(app, "Connect to game")
+    result = wait(app)
+    assert not result["ready"]
+    assert "Not connected" in app.status.get()
     assert app.config.read_bytes() == before
-    assert "not saved" in app.status.get()
+    assert (app.toolkit.profile / "mods/PZToolkitBridge/42/mod.info").is_file()
+    assert not app.toolkit.workspace.exists()
+    assert not app.connected
+    assert "launch" in app.next_step.get().lower()
 
 
-def test_background_create_locks_setup_and_keeps_event_pump_alive(app, tmp_path):
-    app.mod_name.set("GuiExample")
-    press(app, "Create mod")
-    assert all(str(entry.cget("state")) == "disabled" for entry in app.path_entries)
-    # A programmatic config change must not break result delivery either.
-    app.paths["profile_dir"].set(str(tmp_path / "new-profile"))
-    assert wait(app)["id"] == "GuiExample"
-    assert all(str(entry.cget("state")) == "normal" for entry in app.path_entries)
+def test_connect_to_existing_bridge_does_not_redeploy_it(app):
+    press(app, "Connect to game")
+    wait(app)
+    script = app.toolkit.profile / "mods/PZToolkitBridge/42/media/lua/client/PZToolkitBridge.lua"
+    before = script.stat().st_mtime_ns
+    press(app, "Connect to game")
+    wait(app)
+    assert script.stat().st_mtime_ns == before
+    assert not (app.toolkit.profile / "backups").exists()
+
+
+def test_first_connection_detects_and_saves_automatically(tk_root, tmp_path, monkeypatch):
+    import pztoolkit.gui as gui
+    monkeypatch.setattr(gui, "detect_folders", lambda current, data_dir: {"suggested": {"game_dir": str(tmp_path / "game"), "workspace_dir": str(tmp_path / "workspace"), "profile_dir": str(tmp_path / "profile")}})
+    config = tmp_path / "settings/config.json"
+    root = tk.Toplevel(tk_root)
+    root.withdraw()
+    application = Application(root, config)
+    try:
+        assert not config.exists()
+        press(application, "Connect to game")
+        assert wait(application)["ready"] is False
+        assert config.exists()
+        assert (tmp_path / "profile/.pztoolkit-profile").is_file()
+        assert not (tmp_path / "workspace").exists()
+    finally:
+        application.close()
+
+
+def test_ambiguous_discovery_does_not_write_config(tk_root, tmp_path, monkeypatch):
+    import pztoolkit.gui as gui
+    monkeypatch.setattr(gui, "detect_folders", lambda *args: {"suggested": {"game_dir": ""}, "notes": ["Multiple installations found"]})
+    config = tmp_path / "missing.json"
+    root = tk.Toplevel(tk_root)
+    root.withdraw()
+    application = Application(root, config)
+    try:
+        press(application, "Connect to game")
+        assert "error" in wait(application)
+        assert not config.exists()
+        assert not application.connected
+        assert "Ask Codex" in application.status.get()
+    finally:
+        application.close()
+
+
+@pytest.mark.parametrize(("state", "message", "tone"), [
+    ({"god_mode": True}, "God mode is on", "Status.TLabel"),
+    ({"god_mode": False}, "God mode is off", "Status.TLabel"),
+    ({"god_mode": False, "god_mode_error": "API failure"}, "god mode could not be enabled", "Warning.Status.TLabel"),
+])
+def test_connection_displays_actual_god_mode(app, monkeypatch, state, message, tone):
+    monkeypatch.setattr(app.toolkit, "bridge_status", lambda: {"ready": True, **state})
+    press(app, "Check connection")
+    wait(app)
+    assert app.connected
+    assert message in app.status.get()
+    assert app.status_label.cget("style") == tone
+    assert "Game tools" in app.next_step.get()
+
+
+def test_stale_connection_is_not_reported_as_connected(app):
+    press(app, "Connect to game")
+    wait(app)
+    path = app.toolkit.profile / "Lua/pzt-status.txt"
+    path.write_text(json.dumps({"ready": True, "timestamp_ms": (time.time() - 60) * 1000, "god_mode": True}))
+    press(app, "Check connection")
+    assert wait(app)["ready"] is False
+    assert not app.connected
+    assert "Not connected" in app.status.get()
+
+
+@pytest.mark.parametrize(("identifier", "label", "description"), EDITORS)
+def test_editor_buttons_use_shared_allowlisted_api(app, monkeypatch, identifier, label, description):
+    calls = []
+    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or {"ok": True, "status": "passed", "message": "Requested editor"})
+    press(app, label)
+    wait(app)
+    assert calls == [("editor_open", {"editor": identifier})]
+    assert "requested" in app.status.get()
+    assert "visibility is not verified" in app.status.get()
+
+
+@pytest.mark.parametrize(("label", "enabled"), [("God mode on", True), ("God mode off", False)])
+def test_god_mode_buttons_send_explicit_boolean(app, monkeypatch, label, enabled):
+    calls = []
+    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or {"ok": True, "status": "passed", "message": "God mode changed"})
+    press(app, label)
+    wait(app)
+    assert calls == [("god_mode", {"enabled": enabled})]
+
+
+def test_inline_lua_requires_trust_and_has_no_scenario_file(app, monkeypatch):
+    calls = []
+    monkeypatch.setattr(app.toolkit, "call", lambda name, arguments: calls.append((name, arguments)) or {"ok": True, "status": "passed", "message": "fixture result"})
+    press(app, "Run Lua command")
+    assert not app.busy
+    assert "trust checkbox" in app.status.get()
+    app.trust_control.invoke()
+    press(app, "Run Lua command")
+    wait(app)
+    assert calls == [("lua_execute", {"code": "return 'Hello from the game'\n"})]
+    assert not app.toolkit.workspace.exists()
+    assert "fixture result" in app.status.get()
+
+
+def test_editing_lua_revokes_trust_and_preserves_text_across_navigation(app):
+    app.trusted.set(True)
+    app.editor.insert("end", "-- changed\n")
+    app.root.update()
+    assert not app.trusted.get()
+    app.navigation["Connection"].invoke()
+    app.navigation["Game tools"].invoke()
+    assert "changed" in app.editor.get("1.0", "end")
+
+
+def test_worker_serializes_actions_and_keeps_event_pump_alive(app, monkeypatch):
+    calls = []
+    def delayed(name, arguments):
+        calls.append(name)
+        time.sleep(0.15)
+        return {"ready": False}
+    monkeypatch.setattr(app.toolkit, "call", delayed)
+    ticks = []
+    app.root.after(1, lambda: ticks.append(1))
+    press(app, "Check connection")
+    assert all(str(button.cget("state")) == "disabled" for button in app.actions)
+    assert app.editor.cget("state") == "disabled"
+    app.dispatch("god_mode", {"enabled": True})
+    app.close()
+    assert app.root.winfo_exists()
+    wait(app)
+    assert calls == ["bridge_status"]
+    assert ticks
+    assert all(str(button.cget("state")) == "normal" for button in app.actions)
     assert app.root.tk.call("after", "info", app.poll_handle)
 
 
-def test_editor_save_and_trust_gate(app):
-    create(app)
-    app.editor.insert("end", "\nreturn 'edited'\n")
-    press(app, "Run saved scenario")
-    assert not app.busy
-    assert "Save your scenario" in app.status.get()
-    press(app, "Save scenario")
-    assert "edited" in (app.toolkit.workspace / app.loaded_scenario).read_text()
-    press(app, "Run saved scenario")
-    assert not app.busy
-    assert "trust checkbox" in app.status.get()
-
-
-def test_discarded_editor_never_overwrites_new_workspace(app, tmp_path, monkeypatch):
-    create(app)
-    app.editor.insert("end", "\n-- old unsaved text\n")
-    other = tmp_path / "other"
-    scenario = other / "scenarios/GuiExample_smoke.lua"
-    scenario.parent.mkdir(parents=True)
-    scenario.write_text("return 'other workspace'\n")
-    config = tmp_path / "other.json"
-    config.write_text(json.dumps({"game_dir": "game", "workspace_dir": "other", "profile_dir": "other-profile"}))
-    prompts = []
-    monkeypatch.setattr("pztoolkit.gui.messagebox.askyesnocancel", lambda *a, **k: prompts.append(1) or False)
-    app.load_config(config)
-    assert prompts == [1]
-    assert scenario.read_text() == "return 'other workspace'\n"
-    assert "other workspace" in app.editor.get("1.0", "end")
-    assert not app.trusted.get()
-    assert str(config) in app.config_note.get()
-
-
 @pytest.mark.parametrize("outcome", [True, False, None])
-def test_test_run_keeps_ui_responsive_and_reports_outcomes(app, outcome):
-    press(app, "Prepare test profile")
+def test_inline_game_transport_reports_pass_failure_and_unknown_without_workspace(app, outcome):
+    press(app, "Connect to game")
     wait(app)
-    create(app)
     lua = app.toolkit.profile / "Lua"
-    (lua / "pzt-status.txt").write_text(json.dumps({"ready": True, "timestamp_ms": time.time() * 1000, "build": "fixture"}))
-    app.trusted.set(True)
-    app.timeout.set("0.2" if outcome is None else "2")
-    responder_errors = []
-
+    (lua / "pzt-status.txt").write_text(json.dumps({"ready": True, "timestamp_ms": time.time() * 1000}))
+    app.editor.delete("1.0", "end")
+    app.editor.insert("1.0", "return 'inline test'")
+    app.editor.edit_modified(False)
+    app.root.update()
+    app.trust_control.invoke()
+    # Shorten only this transport wait, leaving the real core execution in place.
+    original = app.toolkit.lua_execute
+    def execute(code: str, timeout: float = 30) -> dict:
+        return original(code, 0.25 if outcome is None else 2)
+    app.toolkit.lua_execute = execute
+    errors = []
     def respond():
         deadline = time.monotonic() + 3
         while time.monotonic() < deadline:
@@ -153,158 +239,74 @@ def test_test_run_keeps_ui_responsive_and_reports_outcomes(app, outcome):
                 (lua / "pzt-response.txt").write_text(json.dumps({"id": identifier, "ok": outcome, "message": "fixture verdict"}))
                 return
             time.sleep(0.01)
-        responder_errors.append("No request")
-
-    responder = None
-    if outcome is not None:
-        responder = threading.Thread(target=respond)
+        errors.append("No request")
+    responder = threading.Thread(target=respond) if outcome is not None else None
+    if responder:
         responder.start()
-    ticks = []
-    app.root.after(1, lambda: ticks.append(1))
-    app.show_guide(7)
-    press(app, "Run saved scenario")
-    assert app.busy
-    assert str(app.run_button.cget("state")) == "disabled"
-    app.close()
-    assert app.root.winfo_exists()
+    press(app, "Run Lua command")
     result = wait(app)
     if responder:
         responder.join(timeout=3)
-    assert not responder_errors
-    assert ticks, "GUI event loop blocked during the harness wait"
+    assert not errors
     assert result["status"] == ("passed" if outcome is True else "failed" if outcome is False else "timed_out")
-    assert list((app.toolkit.profile / "reports").glob("*.json"))
-    assert app.guide_complete is (outcome is True)
-    assert (app.guide_arrow is None) is (outcome is True)
-    assert "unknown" in app.status.get() if outcome is None else "fixture verdict" in app.output.get("1.0", "end")
+    assert not app.toolkit.workspace.exists()
+    assert not (app.toolkit.profile / "reports").exists()
+    assert "unknown" in app.status.get() if outcome is None else "fixture verdict" in app.status.get()
 
 
-def test_scenario_path_escape_is_visible_error(app):
-    app.scenario.set("../outside.lua")
-    app.load_scenario()
-    assert app.loaded_scenario is None
-    assert "Could not load" in app.status.get()
-    assert "escapes" in app.output.get("1.0", "end")
+def test_worker_error_is_readable_and_next_action_recovers(app, monkeypatch):
+    monkeypatch.setattr(app.toolkit, "call", lambda *args: (_ for _ in ()).throw(ValueError("Load a world first")))
+    press(app, "Check connection")
+    assert "error" in wait(app)
+    assert "Load a world first" in app.status.get()
+    assert app.status_label.cget("style") == "Error.Status.TLabel"
+    app.status.set("Trying again")
+    assert app.status_label.cget("style") == "Status.TLabel"
 
 
-def test_theme_keeps_reading_and_action_surfaces_legible(app):
+def test_log_read_shows_plain_logs_in_details(app, monkeypatch):
+    monkeypatch.setattr(app.toolkit, "call", lambda *args: {"exists": True, "lines": ["line one", "line two"]})
+    press(app, "Read game logs")
+    wait(app)
+    assert app.details_open.get()
+    assert app.output.get("1.0", "end-1c") == "line one\nline two"
+
+
+def test_theme_has_legible_contrast_and_no_green(app):
     def luminance(color):
-        channels = [int(color[index:index + 2], 16) / 255 for index in (1, 3, 5)]
-        linear = [value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4 for value in channels]
-        return sum(value * weight for value, weight in zip(linear, (0.2126, 0.7152, 0.0722)))
-
+        channels = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        values = [v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in channels]
+        return sum(v * w for v, w in zip(values, (.2126, .7152, .0722)))
     style = ttk.Style(app.root)
     for name in ("TLabel", "Subtitle.TLabel", "TButton", "Accent.TButton", "Status.TLabel", "Error.Status.TLabel", "Warning.Status.TLabel"):
-        values = sorted((luminance(style.lookup(name, "foreground")), luminance(style.lookup(name, "background"))))
-        assert (values[1] + 0.05) / (values[0] + 0.05) >= 4.5, name
+        foreground, background = (style.lookup(name, key) for key in ("foreground", "background"))
+        dark, light = sorted((luminance(foreground), luminance(background)))
+        assert (light + .05) / (dark + .05) >= 4.5
+        for color in (foreground, background):
+            red, green, blue = (int(color[i:i + 2], 16) for i in (1, 3, 5))
+            assert green <= max(red, blue)
     assert app.header_logo.width() > 0
     assert app.display_family == "Oxanium SemiBold"
 
 
-def test_result_tone_resets_when_next_action_changes_status(app):
-    app.display("Action failed.", "fixture", "error")
-    assert app.status_label.cget("style") == "Error.Status.TLabel"
-    app.status.set("Setup saved.")
-    assert app.status_label.cget("style") == "Status.TLabel"
-
-
-def test_guide_arrows_advance_only_after_successful_actions(app):
-    assert app.guide_index == 1  # Fixture saved setup through the real UI handler.
-    app.show_guide(2)
-    assert app.guide_target.cget("text") == "Create mod"
-    assert app.guide_arrow is not None
-    app.mod_name.set("invalid name")
-    press(app, "Create mod")
-    assert "error" in wait(app)
-    assert app.guide_index == 2
-    app.mod_name.set("GuiExample")
-    press(app, "Create mod")
-    assert wait(app)["id"] == "GuiExample"
-    assert app.guide_index == 3
-    assert app.guide_target.cget("text") == "Check selected"
-    app.guide_enabled.set(False)
-    app.toggle_guide()
-    assert app.guide_arrow is None
-
-
-def test_guide_does_not_mark_bridge_ready_from_a_failed_readiness_check(app):
-    press(app, "Prepare test profile")
-    wait(app)
-    app.show_guide(6)
-    press(app, "Check bridge")
-    assert wait(app)["ready"] is False
-    assert app.guide_index == 6
-    assert app.guide_target.cget("text") == "Check bridge"
-
-
-def test_sidebar_navigation_and_guide_reveal_selected_page(app):
-    app.navigation["In-game tests"].invoke()
+def test_repeated_edit_trust_edit_always_revokes_trust(app):
+    app.editor.insert("end", "-- first edit\n")
     app.root.update()
-    assert app.tabs.tab(app.tabs.select(), "text") == "In-game tests"
-    assert app.page_title.get() == "In-game tests"
-    assert app.guide_arrow is None
-    app.guide_show.invoke()
+    app.trust_control.invoke()
+    assert app.trusted.get()
+    app.editor.insert("end", "-- second edit\n")
     app.root.update()
-    assert app.tabs.tab(app.tabs.select(), "text") == "Setup"
-    assert app.guide_target.cget("text") == "Prepare test profile"
+    assert not app.trusted.get()
+    assert app.lua_dirty
+    assert not app.editor.edit_modified()
+    press(app, "Run Lua command")
+    assert not app.busy
+    assert "trust checkbox" in app.status.get()
 
 
-def test_new_theme_uses_no_green_controls(app):
-    style = ttk.Style(app.root)
-    for name in ("TButton", "Accent.TButton", "Selected.Nav.TButton", "Status.TLabel", "Treeview", "Guide.TButton"):
-        for option in ("foreground", "background"):
-            color = style.lookup(name, option)
-            red, green, blue = (int(color[index:index + 2], 16) for index in (1, 3, 5))
-            assert green <= max(red, blue), (name, option, color)
-
-
-def test_detect_folders_previews_without_saving_or_changing_workspace(app, monkeypatch, tmp_path):
-    import pztoolkit.gui as gui
-    before = app.config.read_bytes()
-    workspace = app.paths["workspace_dir"].get()
-    detected_game = str(tmp_path / "detected-game")
-
-    def detect(current, data_dir):
-        return {"suggested": {**current, "game_dir": detected_game}, "game_candidates": [], "notes": []}
-
-    monkeypatch.setattr(gui, "detect_folders", detect)
-    press(app, "Detect folders")
-    assert app.busy
-    wait(app)
-    assert app.paths["game_dir"].get() == detected_game
-    assert app.paths["workspace_dir"].get() == workspace
-    assert app.config.read_bytes() == before
-    assert "Review" in app.status.get()
-    assert not app.ready()
-
-
-def test_first_launch_detects_without_requiring_or_writing_config(tk_root, tmp_path, monkeypatch):
-    import pztoolkit.gui as gui
-    monkeypatch.setattr(gui, "detect_folders", lambda current, data_dir:
-                        {"suggested": {**current, "game_dir": str(tmp_path / "found")},
-                         "game_candidates": [], "notes": []})
-    root = tk.Toplevel(tk_root)
-    root.withdraw()
-    application = Application(root, tmp_path / "new-config.json")
-    try:
-        root.update()  # Run the first-launch idle handler.
-        wait(application)
-        assert application.paths["game_dir"].get() == str(tmp_path / "found")
-        assert not application.config.exists()
-        assert application.toolkit is None
-    finally:
-        application.close()
-
-
-def test_detection_error_leaves_existing_setup_intact(app, monkeypatch):
-    import pztoolkit.gui as gui
-    before = {key: value.get() for key, value in app.paths.items()}
-
-    def fail(current, data_dir):
-        raise OSError("Fixture read denied")
-
-    monkeypatch.setattr(gui, "detect_folders", fail)
-    press(app, "Detect folders")
-    assert "error" in wait(app)
-    assert {key: value.get() for key, value in app.paths.items()} == before
-    assert "Fixture read denied" in app.output.get("1.0", "end")
+def test_trusted_code_snapshot_blocks_edits_before_modified_event(app):
+    app.trust_control.invoke()
+    app.editor.insert("end", "-- changed without pumping events\n")
+    press(app, "Run Lua command")
+    assert not app.busy
+    assert not app.trusted.get()

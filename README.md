@@ -1,186 +1,133 @@
 <h1 align="center">Project Zomboid Toolkit</h1>
-<p align="center">Windows desktop app, MCP and CLI, with an in-game Lua test harness.</p>
+<p align="center">A Dead Signal Interactive game bridge, desktop toolbelt, CLI and MCP server.</p>
 <p align="center">
-  <img alt="Status: initial mod development implementation" src="https://img.shields.io/badge/status-initial_implementation-orange">
-  <img alt="Target: Build 42" src="https://img.shields.io/badge/target-Build_42-green">
-  <img alt="Python: 3.11 or later" src="https://img.shields.io/badge/python-3.11%2B-blue">
+  <img alt="Status: preview" src="https://img.shields.io/badge/status-preview-orange">
+  <img alt="Target: Build 42" src="https://img.shields.io/badge/target-Build_42-9c714d">
+  <img alt="Windows app" src="https://img.shields.io/badge/app-Windows-blue">
 </p>
-<p align="center"><a href="docs/design.md">Design</a> · <a href="docs/plan.md">Delivery plan</a> · <a href="docs/skills.md">Skills and provenance</a> · <a href="AGENTS.md">Agent guidance</a></p>
+<p align="center"><a href="docs/design.md">Architecture</a> · <a href="docs/plan.md">Delivery plan</a> · <a href="docs/validation.md">Validation</a> · <a href="docs/skills.md">Skills</a> · <a href="AGENTS.md">Agent guidance</a></p>
 
-The first milestone supports **mod development**. One Python registry defines all
-12 tools, their JSON input schemas, validation, and execution. The CLI and MCP
-server consume that registry. A companion Lua mod receives scenarios inside a
-running debug single-player game and returns assertion results.
+Connect Codex or another MCP client to your running Project Zomboid debug world.
+Use the desktop app to connect, change god mode, open built-in debug editors and
+read logs. **You do not need to create a mod, choose project folders or save a
+scenario.** Keep editing your existing mod in your editor. The game's own Mods
+menu remains responsible for enabling mods.
 
-Server administration and gameplay automation remain later milestones.
+## Open and connect
 
-## Setup
+Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.4.0/pz-windows.zip),
+extract it and open **PZToolkit.exe**. Installed copies also have a Start menu
+entry under **Dead Signal Interactive**. No terminal or Python installation is
+needed to use the app.
 
-Download [the Windows ZIP](https://github.com/raiinman/project-zomboid-toolkit/releases/download/v0.3.2/pz-windows.zip),
-extract it, and double-click **PZToolkit.exe**. It opens a proper desktop window;
-no terminal or Python installation is needed.
+1. Open the app. It uses your existing saved connection settings.
+2. Choose **Connect to game**. It installs **PZ Toolkit Bridge** if needed and
+   checks the connection.
+3. Choose **Launch Project Zomboid (test profile)**. In the game's Mods menu,
+   enable **PZ Toolkit Bridge** and any existing mod you want to work on.
+4. Load a single-player world and unpause. Return to the app and check the
+   connection. The app reports whether the bridge and god mode are ready.
+5. Use the game tools, or connect Codex using the MCP example below.
 
-1. **Setup:** use automatic detection or **Detect folders**, review your game,
-   workspace and isolated test profile. Save setup,
-   then prepare the test profile.
-2. **Mods:** create a mod, select it, check it and deploy it. Open its folder to
-   edit the mod sources with your preferred editor.
-3. **In-game tests:** launch the game, check bridge readiness, select and edit
-   a scenario, save it, then run it. Results, logs and reports are available in
-   the window. Enable the bridge and your mod in a loaded, unpaused disposable
-   single-player world first.
+The test profile is the existing separate set of game settings and saves.
+The app keeps that safety boundary and does not create another mod project or
+move your existing workspace. Debug is enabled at launch. With the bridge enabled,
+god mode turns on when your character loads or respawns. You can turn it off
+for damage tests. The bridge reports its actual state rather than assuming it.
 
-The app saves its configuration in `%LOCALAPPDATA%/PZToolkit/config.json` by
-default. Setup shows the active file and can open an existing toolkit config.
-Unsaved settings must be saved before tool actions. One background action runs
-at a time, keeping the window responsive while the game returns a result.
+The interface keeps the approved distressed Dead Signal Interactive logo,
+charcoal surfaces and warm derelict-workshop artwork. Help explains the next
+connection step; technical details start closed and inline Lua has a separate advanced tab.
+The visual contract is in [DESIGN.md](DESIGN.md).
 
-The desktop keeps the distressed **Dead Signal Interactive** logo in a charcoal,
-ivory and studio-red sidebar. Choose **Mods**, **In-game tests** or **Setup** in
-the sidebar, and resize the activity/results dock to see more output. The optional
-**Show guide** walkthrough points arrows at the next control across eight steps,
-from saving setup to running a scenario. **Previous**, **Next** and **Show me**
-let you revisit instructions; moving through the guide does not execute actions
-or establish a passing test. Its visual contract is in [DESIGN.md](DESIGN.md).
+## Connect Codex or another MCP client
 
-Live testing requires your own Project Zomboid installation. The launcher targets
-Windows and Build 42. **pz.exe** remains a separate console CLI and MCP server.
-The following commands are optional alternatives to using the app:
-
-```powershell
-Copy-Item pztoolkit.example.json pztoolkit.local.json
-.\pz.exe call doctor
-.\pz.exe tools
-```
-
-Edit `game_dir` in `pztoolkit.local.json` to your game installation. Relative paths
-resolve beside the config file. `profile_dir`, `workspace_dir`, and `game_dir` must
-be disjoint. Use a new toolkit profile, outside your normal `Zomboid` directory.
-Local configuration, profiles, tokens, game logs, and reports are ignored by Git.
-
-## First mod and in-game test
-
-Examples read JSON argument files so shell quoting works consistently.
-
-```powershell
-.\pz.exe call profile_prepare
-.\pz.exe call mod_create --args-file examples/create-mod.json
-.\pz.exe call mod_check --args-file examples/check-mod.json
-.\pz.exe call mod_deploy --args-file examples/check-mod.json
-.\pz.exe call game_launch
-```
-
-First launch may clear the prepared default mod list. In the isolated game window,
-confirm **PZ Toolkit Bridge** and **HelloZomboid** are
-enabled under Mods. Create a disposable single-player world with both mods enabled.
-Once your character is loaded and the game is running:
-
-```powershell
-.\pz.exe call bridge_status
-.\pz.exe call harness_run --args-file examples/smoke.json
-.\pz.exe call logs_read --args-file examples/logs.json
-```
-
-`mod_create` writes `projects/mods/HelloZomboid/42/mod.info`, a client Lua file,
-a `common/` directory, and `projects/scenarios/HelloZomboid_smoke.lua`.
-Edit the mod and scenario files with your editor or coding agent. Redeploy and
-restart/load the test world after mod changes. Deployment preserves the previous
-copy under the isolated profile's `backups/` directory.
-
-Scenario files contain ordinary Lua assertions and may return a message. An
-exception or `return false` fails the scenario. Every completed harness wait writes
-a JSON report containing request ID, scenario SHA256, result, duration, and new
-console output under the isolated profile's `reports/` directory. A missing or
-stale bridge is a setup error. A timeout is inconclusive and returns a nonzero exit.
-
-**Run trusted, terminating scenarios only.** Lua runs with game privileges on the
-game thread. The harness wait timeout cannot stop code that already started.
-This bridge is for a disposable local debug single-player session. It rejects
-requests when connected as a multiplayer client.
-
-## MCP connection
-
-Configure your MCP client to launch the executable with absolute paths:
+Set the client's executable to your installed **pz.exe** and pass **serve**.
+Both the app and CLI use the saved connection settings at
+`%LOCALAPPDATA%/PZToolkit/config.json` by default.
 
 ```json
 {
   "mcpServers": {
     "project-zomboid": {
-      "command": "C:/path/to/project-zomboid-toolkit/pz.exe",
-      "args": [
-        "--config", "C:/path/to/project-zomboid-toolkit/pztoolkit.local.json",
-        "serve"
-      ]
+      "command": "C:/path/to/installed/pz.exe",
+      "args": ["serve"]
     }
   }
 }
 ```
 
-This is a generic MCP client example. The executable includes MCP support.
-The server communicates over stdio and reserves stdout for MCP messages.
-It uses the official Python MCP SDK 1.x, pinned by `uv.lock`.
+Replace the example executable path with the installed location. An existing
+configuration can be selected explicitly with `--config` before `serve`.
+The server uses stdio, reserving stdout for MCP messages. The standalone
+executable includes the official Python MCP SDK 1.x, pinned by `uv.lock`.
 
-## Tools
+## Shared game tools
+
+The normal desktop, CLI and MCP surface uses the same 11-tool registry view.
 
 | Tool | Purpose |
 | --- | --- |
-| `doctor` | Inspect configuration and installation |
-| `folders_detect` | Find verified game installs and preview setup folders without saving |
-| `source_search`, `source_read` | Search/read installed Lua and script text |
-| `mod_create`, `mod_check` | Scaffold and check Build 42 mod metadata/layout |
-| `profile_prepare` | Prepare an isolated profile and bridge |
-| `mod_deploy` | Copy a mod into that profile with deployment backups |
-| `game_launch` | Launch the Windows client using the isolated cache directory |
-| `bridge_status` | Check a fresh in-world bridge heartbeat |
-| `harness_run` | Execute a trusted Lua scenario and retain evidence |
-| `logs_read` | Read the isolated console log |
+| `doctor` | Check saved settings and the installation |
+| `bridge_install` | Install or refresh the bridge helper, preserving its token and backing up changed files |
+| `game_launch` | Open the installed game with debug and the existing isolated profile |
+| `bridge_status` | Check a fresh loaded-world connection and actual god-mode state |
+| `logs_read` | Read game logs from that profile |
+| `source_search`, `source_read` | Search or read installed Lua and scripts without changing them |
+| `lua_execute` | Run trusted inline Lua without creating a scenario or report file |
+| `god_mode` | Set and verify the loaded character's god mode |
+| `debug_editors` | List supported built-in game editors |
+| `editor_open` | Request the debug, vehicle, attachment, animation or world-map editor |
 
-Use `pz tools` for exact schemas. `mod_check` checks layout and metadata; it does
-not claim to compile Lua or verify compatibility. Installed game source is read-only
-and is never bundled or uploaded by these tools.
+An editor request returning successfully does not prove its window is visible.
+This toolbelt does not claim UEFN Toolbelt feature parity. More game capabilities
+can be added through the same registry.
 
-## Verification
-
-Source development and executable builds require Python 3.11+ and
-[uv](https://docs.astral.sh/uv/). These are build dependencies, not requirements
-for users of the executable. To build on Windows:
+For optional CLI use:
 
 ```powershell
+.\pz.exe tools
+.\pz.exe call bridge_status
+.\pz.exe serve
+```
+
+Use `tools` for current schemas. The older file/scaffold operations remain
+available for existing scripts through `pz.exe --all-tools ...`; they are not
+part of normal onboarding or the GUI. The complete legacy registry has 17 tools.
+
+## Execution limits
+
+The bridge runs in a loaded, unpaused local debug single-player world. It refuses
+multiplayer client and server contexts. Lua has game privileges and must terminate;
+a timeout cannot stop code already running and means the outcome is unknown.
+Only synchronous assertions contribute to a result. Use trusted commands.
+
+Inline commands reuse bounded authenticated request/response files inside the
+existing profile. They do not create scenario or per-command report files.
+Normal saves, installed game sources and unrelated mods stay outside toolkit
+writes. Local settings, tokens, game files and logs stay out of Git.
+
+## Development and verification
+
+Building requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). App users do
+not need either installed.
+
+```powershell
+uv sync --frozen --extra mcp --extra dev --python 3.11
+uv run --no-sync python -m pytest -q
 .\packaging\build.ps1
 uv run --no-sync python packaging/verify_exe.py dist/pz.exe
 uv run --no-sync python packaging/verify_gui.py dist/PZToolkit.exe
 ```
 
-The outputs are `dist/PZToolkit.exe` (desktop app), `dist/pz.exe` (CLI/MCP) and
-`dist/pz-windows.zip` (both executables, config template, examples and quickstart).
-Extract the ZIP before following Setup.
-Keep the configuration and scenario files outside
-the executable. Relative configuration paths resolve beside the config file;
-the default config is found in the current working directory. For source tests:
+The build produces the GUI, CLI/MCP executable and Windows ZIP. Offline tests,
+executable checks, rendered window review and real in-game acceptance are separate
+forms of evidence. Current results and outstanding live checks are recorded in
+[validation](docs/validation.md) and the [delivery plan](docs/plan.md).
 
-```powershell
-uv sync --frozen --extra mcp --extra dev --python 3.11
-uv lock --check
-uv pip check
-uv run --no-sync python -m pytest -q
-uv build
-```
-
-Tests include actual MCP stdio discovery/invocation, filesystem containment,
-deployment ownership, stale response handling, and Lua 5.1 bridge mocks.
-GUI checks cover native controls, guide progression, error handling and theme
-colors. Startup was checked against an isolated 42.20.0 client; in-world bridge
-assertions remain pending. The new layout's full executable and rendered review
-results belong in the measured [validation record](docs/validation.md), with
-outstanding acceptance in the [delivery plan](docs/plan.md).
-
-Four broad internet passes and four additional PZWiki passes informed the design:
+Four broad research passes and four additional PZWiki passes informed the bridge:
 [research](docs/research.md), [wiki findings](docs/wiki-research.md), and
-[page-by-page coverage](docs/wiki-coverage.csv). The ledger accounts for 173 hub
-links plus selected drill-downs, with partial/index/excluded entries explicit.
-
-The project includes the [DOX framework](https://github.com/raiinman/dox) as an
-`AGENTS.md` hierarchy and records applied workflows from your
-[skill library](https://github.com/raiinman/skill-library) in
-[skills and provenance](docs/skills.md). DOX's MIT notice is preserved in
-[docs/DOX-LICENSE](docs/DOX-LICENSE).
+[coverage ledger](docs/wiki-coverage.csv). Partial/index/excluded coverage is explicit.
+The project uses the [DOX framework](https://github.com/raiinman/dox) and relevant
+workflows from the user's [skill library](https://github.com/raiinman/skill-library).
+See [provenance](docs/skills.md) and the preserved [MIT notice](docs/DOX-LICENSE).

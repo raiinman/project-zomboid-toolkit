@@ -2,6 +2,13 @@
 
 Built-in image generation was used, not the API/CLI fallback.
 
+## Derelict workshop
+
+The exact built-in generation prompt is retained in
+`derelict-workshop-prompt.txt` and embedded in `derelict-workshop.png`. This
+original environment is the current bridge-first home banner. It contains no
+text, UI, people or creatures; the logo remains a separate unchanged asset.
+
 ## Distressed studio logo
 
 Edit the user's actual reverse Dead Signal Interactive logo. Preserve the exact

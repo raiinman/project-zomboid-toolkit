@@ -23,8 +23,23 @@ OWNER = "pztoolkit-v1"
 TOOL_NAMES = (
     "doctor", "mod_create", "mod_check", "mod_deploy", "source_search",
     "source_read", "profile_prepare", "game_launch", "logs_read", "bridge_status",
-    "harness_run", "folders_detect",
+    "harness_run", "folders_detect", "lua_execute", "god_mode", "debug_editors", "editor_open", "bridge_install",
 )
+
+GAME_TOOL_NAMES = (
+    "doctor", "bridge_install", "game_launch", "bridge_status", "logs_read",
+    "source_search", "source_read", "lua_execute", "god_mode", "debug_editors", "editor_open",
+)
+
+# Signatures inspected in shipped DebugUIs/DebugMenu/ISDebugMenu.lua.
+DEBUG_EDITORS = {
+    "debug": ("Debug menu", "require 'DebugUIs/DebugMenu/ISDebugMenu'; "
+              "assert(ISDebugMenu and type(ISDebugMenu.OnOpenPanel) == 'function', 'Debug menu unavailable'); ISDebugMenu.OnOpenPanel()"),
+    "vehicle": ("Vehicle editor", "assert(type(showVehicleEditor) == 'function', 'Vehicle editor unavailable'); showVehicleEditor(nil)"),
+    "attachment": ("Attachment editor", "assert(type(showAttachmentEditor) == 'function', 'Attachment editor unavailable'); showAttachmentEditor()"),
+    "animation": ("Animation viewer", "assert(type(showAnimationViewer) == 'function', 'Animation viewer unavailable'); showAnimationViewer()"),
+    "world_map": ("World map editor", "assert(type(showWorldMapEditor) == 'function', 'World map editor unavailable'); showWorldMapEditor(nil)"),
+}
 
 
 def confined(root: Path, relative: str) -> Path:
@@ -79,7 +94,8 @@ def read_json(path: Path) -> dict:
 
 
 class Toolkit:
-    def __init__(self, config_path: str | Path):
+    def __init__(self, config_path: str | Path, *, tool_names=None):
+        self.tool_names = tuple(tool_names or TOOL_NAMES)
         self.config_path = Path(config_path).resolve()
         config = read_json(self.config_path)
         roots = []
@@ -98,7 +114,7 @@ class Toolkit:
             raise ValueError("Choose an isolated profile outside the normal Zomboid profile")
 
     def tools(self) -> dict:
-        return {name: getattr(self, name) for name in TOOL_NAMES}
+        return {name: getattr(self, name) for name in self.tool_names}
 
     def schemas(self) -> list[dict]:
         result = []
@@ -106,7 +122,7 @@ class Toolkit:
             hints = get_type_hints(fn)
             properties, required = {}, []
             for param in inspect.signature(fn).parameters.values():
-                prop = {"type": {str: "string", int: "integer", float: "number"}[hints[param.name]]}
+                prop = {"type": {str: "string", int: "integer", float: "number", bool: "boolean"}[hints[param.name]]}
                 if param.default is inspect.Parameter.empty:
                     required.append(param.name)
                 else:
@@ -244,8 +260,34 @@ class Toolkit:
             body = match.group(1) + f"    mod = {identifier},\n"
             atomic_text(path, text[:match.start(1)] + body + text[match.end(1):])
 
+    def _ensure_game_stopped(self) -> None:
+        """Refuse bridge deployment or another launch while the tracked game runs."""
+        pid_file = self._profile_path("pzt-game.pid")
+        if pid_file.exists():
+            pid = int(pid_file.read_text())
+            if os.name == "nt":
+                # Windows signal 0 is CTRL_C_EVENT, not a process-existence probe.
+                try:
+                    listing = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                                             capture_output=True, text=True, check=True, timeout=10,
+                                             creationflags=subprocess.CREATE_NO_WINDOW)
+                except subprocess.SubprocessError as exc:
+                    raise ValueError("Could not inspect the tracked game process") from exc
+                running = any(len(row) > 1 and row[1] == str(pid) and
+                              row[0].lower() == "projectzomboid64.exe"
+                              for row in csv.reader(listing.stdout.splitlines()))
+            else:
+                try:
+                    os.kill(pid, 0)
+                    running = True
+                except OSError:
+                    running = False
+            if running:
+                raise ValueError("A tracked game process is already running")
+
     def profile_prepare(self) -> dict:
         """Initialize an isolated game profile and install/enable the local debug bridge."""
+        self._ensure_game_stopped()
         marker = self.profile / ".pztoolkit-profile"
         if self.profile.exists() and not marker.exists() and any(self.profile.iterdir()):
             raise ValueError("Refusing to claim a nonempty profile without toolkit ownership")
@@ -267,6 +309,12 @@ class Toolkit:
         return {"ok": True, "profile_dir": str(self.profile), "bridge": "PZToolkitBridge",
                 "first_launch_requires_mod_confirmation": True,
                 "next_step": "Deploy a mod, launch this profile, enable the bridge/mod in Mods, then create a single-player test world"}
+
+    def bridge_install(self) -> dict:
+        """Install and enable the toolkit bridge in its owned isolated game profile."""
+        result = self.profile_prepare()
+        result["next_step"] = "Launch the isolated debug game, enable PZ Toolkit Bridge and load a single-player world"
+        return result
 
     def mod_deploy(self, mod: str) -> dict:
         """Deploy a checked mod into the owned isolated profile, preserving its previous deployment."""
@@ -314,39 +362,28 @@ class Toolkit:
         return {"path": relative.as_posix(), "start": start, "lines": content[start - 1:start - 1 + lines]}
 
     def game_launch(self) -> dict:
-        """Launch the game in debug mode using only the prepared isolated cache/profile."""
+        """Launch isolated debug single-player testing with god mode enabled on character load."""
         self._owned_profile()
         executable = self.game / "ProjectZomboid64.exe"
         if not executable.is_file():
             raise ValueError("Windows ProjectZomboid64.exe was not found in game_dir")
+        self._ensure_game_stopped()
         pid_file = self._profile_path("pzt-game.pid")
-        if pid_file.exists():
-            pid = int(pid_file.read_text())
-            if os.name == "nt":
-                # Windows signal 0 is CTRL_C_EVENT, not a process-existence probe.
-                try:
-                    listing = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
-                                             capture_output=True, text=True, check=True, timeout=10,
-                                             creationflags=subprocess.CREATE_NO_WINDOW)
-                except subprocess.SubprocessError as exc:
-                    raise ValueError("Could not inspect the tracked game process") from exc
-                running = any(len(row) > 1 and row[1] == str(pid) and
-                              row[0].lower() == "projectzomboid64.exe"
-                              for row in csv.reader(listing.stdout.splitlines()))
-            else:
-                try:
-                    os.kill(pid, 0)
-                    running = True
-                except OSError:
-                    running = False
-            if running:
-                raise ValueError("A tracked game process is already running")
+        bridge_relative = "42/media/lua/client/PZToolkitBridge.lua"
+        source = Path(__file__).parent / "assets/bridge" / bridge_relative
+        installed = self._profile_path("mods/PZToolkitBridge/" + bridge_relative)
+        if (not installed.is_file() or installed.stat().st_size != source.stat().st_size
+                or installed.read_bytes() != source.read_bytes()):
+            self.profile_prepare()
+        else:
+            self._enable("PZToolkitBridge")
         args = [str(executable), "-debug", f"-cachedir={self.profile}", "-modfolders", "mods"]
         process = subprocess.Popen(args, cwd=self.game, stdin=subprocess.DEVNULL,
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         atomic_text(pid_file, str(process.pid))
         return {"ok": True, "pid": process.pid, "profile_dir": str(self.profile),
-                "next_step": "Create/load a disposable single-player test world, then call bridge_status"}
+                "debug": True, "god_mode_on_spawn": True,
+                "next_step": "Enable PZ Toolkit Bridge and load a disposable single-player world. God mode turns on when your character loads; check bridge_status."}
 
     def logs_read(self, lines: int = 100) -> dict:
         """Read the tail of console.txt from the isolated profile only."""
@@ -382,6 +419,41 @@ class Toolkit:
         if path.suffix.lower() != ".lua" or path.stat().st_size > 60 * 1024:
             raise ValueError("Scenario must be a Lua file no larger than 60 KiB")
         code = path.read_text(encoding="utf-8-sig")
+        return self._execute(code, timeout, scenario)
+
+    def lua_execute(self, code: str, timeout: float = 30) -> dict:
+        """Execute trusted inline Lua in the loaded debug world without scenario or report files."""
+        if not isinstance(code, str) or not code.strip() or len(code.encode("utf-8")) > 60 * 1024:
+            raise ValueError("code must be nonempty Lua no larger than 60 KiB")
+        if type(timeout) not in (int, float) or not math.isfinite(timeout) or not 0.1 <= timeout <= 300:
+            raise ValueError("timeout must be between 0.1 and 300 seconds")
+        return self._execute(code, timeout)
+
+    def god_mode(self, enabled: bool = True) -> dict:
+        """Set and verify the loaded player's god mode through the authenticated debug bridge."""
+        if type(enabled) is not bool:
+            raise ValueError("enabled must be a boolean")
+        value = "true" if enabled else "false"
+        return self.lua_execute("local player = assert(getPlayer(), 'Player not loaded'); "
+                                f"player:setGodMod({value}); "
+                                f"assert(player:isGodMod() == {value}, 'God mode change did not apply'); "
+                                f"return 'God mode {'enabled' if enabled else 'disabled'}'")
+
+    def debug_editors(self) -> dict:
+        """List supported built-in debug editors without opening windows or writing files."""
+        return {"editors": [{"id": key, "name": value[0]} for key, value in DEBUG_EDITORS.items()],
+                "requires": "A connected, loaded debug single-player world",
+                "evidence": "Opening is a game-side request, not verification that a window is visible"}
+
+    def editor_open(self, editor: str) -> dict:
+        """Request one allowlisted built-in editor in the connected debug game."""
+        if not isinstance(editor, str) or editor not in DEBUG_EDITORS:
+            raise ValueError("Unknown editor; choose an id returned by debug_editors")
+        title, code = DEBUG_EDITORS[editor]
+        return self.lua_execute(code + f"; return 'Requested {title}; window visibility is not verified'")
+
+    def _execute(self, code: str, timeout: float, scenario: str | None = None) -> dict:
+        """Shared authenticated wire transport; only legacy scenarios persist reports."""
         status = self.bridge_status()
         if not status["ready"]:
             raise ValueError(f"Bridge is not ready ({status.get('reason', 'no fresh heartbeat')}): {status['next_step']}")
@@ -400,9 +472,11 @@ class Toolkit:
         if log_offset:
             with log_path.open("rb") as stream:
                 log_prefix = stream.read(min(4096, log_offset))
-        report = {"id": identifier, "scenario": scenario, "sha256": hashlib.sha256(code.encode("utf-8")).hexdigest(),
+        report = {"id": identifier, "sha256": hashlib.sha256(code.encode("utf-8")).hexdigest(),
                   "status": "timed_out", "ok": False, "message": "No matching game response before deadline",
                   "game_build": status.get("build"), "execution_contract": "synchronous Lua assertions"}
+        if scenario is not None:
+            report["scenario"] = scenario
         try:
             with lock_file:
                 lock_file.write(identifier)
@@ -443,8 +517,9 @@ class Toolkit:
                 report["logs_truncated"] = size - offset > 256 * 1024
                 stream.seek(offset)
                 report["logs"] = stream.read(256 * 1024).decode("utf-8", errors="replace").splitlines()
-        destination = self._profile_path(f"reports/{identifier}.json")
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        report["report"] = str(destination)
-        atomic_text(destination, json.dumps(report, indent=2, ensure_ascii=False))
+        if scenario is not None:
+            destination = self._profile_path(f"reports/{identifier}.json")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            report["report"] = str(destination)
+            atomic_text(destination, json.dumps(report, indent=2, ensure_ascii=False))
         return report

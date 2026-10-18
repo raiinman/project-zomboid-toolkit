@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T04:07:24.759792+00:00",
+  "title": "Design System: Project Zomboid Toolkit",
+  "extensions": {
+    "colorMeta": {
+      "amber": {
+        "role": "primary",
+        "displayName": "Warm emergency amber",
+        "tonalRamp": [
+          "oklch(15% 0.04 70)",
+          "oklch(26% 0.04 70)",
+          "oklch(37% 0.04 70)",
+          "oklch(48% 0.04 70)",
+          "oklch(59% 0.04 70)",
+          "oklch(70% 0.04 70)",
+          "oklch(82% 0.04 70)",
+          "oklch(95% 0.04 70)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Industrial heading",
+        "purpose": "Short native page headings; sizes in Tk points."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "work-only-progress",
+        "value": "indeterminate while worker active",
+        "purpose": "Operational progress only; no idle decorative motion."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Portable visual translation of the native Tk primary button.",
+      "html": "<button class=\"ds-primary\">Check connection</button>",
+      "css": ".ds-primary{background:#e5b26d;color:#141416;padding:10px 14px;border:1px solid #e5b26d;font:11pt \"Segoe UI\",sans-serif}.ds-primary:hover{background:#f4c68e}.ds-primary:active{background:#4b454d}.ds-primary:focus-visible{outline:2px solid #e5b26d;outline-offset:3px}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Portable visual translation of the native Tk secondary button.",
+      "html": "<button class=\"ds-secondary\">Read game logs</button>",
+      "css": ".ds-secondary{background:#303035;color:#f3eee4;padding:10px 14px;border:1px solid #414047;font:11pt \"Segoe UI\",sans-serif}.ds-secondary:hover{background:#414047}.ds-secondary:active{background:#4b454d}.ds-secondary:focus-visible{outline:2px solid #e5b26d;outline-offset:3px}"
+    },
+    {
+      "name": "Code field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Portable visual translation of the native Tk code field.",
+      "html": "<input class=\"ds-field\" aria-label=\"Lua code\" value=\"return getPlayer():isGodMod()\">",
+      "css": ".ds-field{background:#1b1b1f;color:#f3eee4;padding:10px;border:1px solid #414047;font:11pt Consolas,monospace}.ds-field:hover{border-color:#414047}.ds-field:focus-visible{outline:1px solid #e5b26d}"
+    },
+    {
+      "name": "Sidebar navigation",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Portable visual translation of the native Tk sidebar navigation.",
+      "html": "<button class=\"ds-nav\">Connect to game</button>",
+      "css": ".ds-nav{background:#262326;color:#c4bcb1;padding:13px 14px;border:0;text-align:left;font:11pt \"Segoe UI\",sans-serif}.ds-nav:hover{background:#414047;color:#f3eee4}.ds-nav:active{background:#733c32;color:#f3eee4}.ds-nav:focus-visible{outline:2px solid #e5b26d;outline-offset:2px}"
+    },
+    {
+      "name": "Status surface",
+      "kind": "card",
+      "refersTo": "status",
+      "description": "Portable visual translation of the native Tk status surface.",
+      "html": "<div class=\"ds-status\">Load your character and unpause, then check the connection.</div>",
+      "css": ".ds-status{background:#242328;color:#f3eee4;padding:12px;font:11pt \"Segoe UI\",sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Derelict Workshop",
+    "overview": "A readable game toolbelt inside a derelict workshop. Worn industrial artwork and the approved distressed Dead Signal Interactive logo carry the atmosphere; instructions and native controls stay quiet, clear and intact. The user rejected green and creature imagery.",
+    "keyCharacteristics": [
+      "Warm industrial decay in imagery",
+      "Plain instructions before technical detail",
+      "Native controls with explicit state"
+    ],
+    "rules": [
+      {
+        "name": "The Quiet Controls Rule",
+        "body": "Keep texture in imagery and solid surfaces behind live instructions and controls.",
+        "section": "colors"
+      },
+      {
+        "name": "The Literal State Rule",
+        "body": "Show connection and god-mode claims only from actual tool results; decoration never stands in for evidence.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve the approved distressed logo PNG exactly.",
+      "Do describe the next useful game action in plain language.",
+      "Do keep technical output collapsed and inline Lua in the advanced tab."
+    ],
+    "donts": [
+      "Don't introduce green or creature figures.",
+      "Don't distress instructions, field text or controls.",
+      "Don't turn mod creation, folder selection or saved scenarios into connection prerequisites."
+    ]
+  }
+}

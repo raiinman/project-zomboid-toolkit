@@ -27,21 +27,27 @@ transport, and packaged Lua bridge assets.
   each capability has its own supported contract and verification.
 - Write machine-readable scenario evidence and distinguish game failure, timeout,
   malformed response, and successful assertions.
+- Enable god mode once per loaded player through OnCreatePlayer, with a tick
+  fallback, only with a token, debug and local single-player guards. Preserve
+  later manual disablement. Heartbeats report actual `god_mode` and API errors.
+  Before launch, refresh a changed bundled bridge in the owned profile with a
+  backup, preserve the token, and enable the bridge. Never refresh a tracked
+  running game. Debug remains a launcher argument.
 - Keep MCP stdout reserved for protocol traffic.
 - `gui.py` is a native Tk adapter that dispatches through `Toolkit.call`. Keep
-  tool work on a serialized worker and widgets on the Tk thread. Block actions
-  with unsaved setup changes, preserve unsaved scenario edits across workspace
-  switches, and show errors and inconclusive timeouts in the window. Settings
-  default to `%LOCALAPPDATA%/PZToolkit/config.json`; writes still require Save.
-- Present native sidebar pages and a resizable activity dock. The optional
-  eight-step guide points to actual controls, permits manual navigation and
-  advances automatically only after the matching successful action. Bridge
-  readiness requires `ready=true`; only a passing harness result completes it.
-  Never execute tools merely by navigating the guide.
-- `discovery.py` owns bounded read-only folder detection. Reuse it in GUI,
-  shared `folders_detect` tool and configuration-free CLI `detect`. Scan Steam
-  library metadata and known locations, not whole drives. Never adopt normal
-  Zomboid saves as a test profile. GUI detection previews paths without saving.
+  tool work on a serialized worker and widgets on the Tk thread. Show errors
+  and inconclusive timeouts in the window. Settings default to
+  `%LOCALAPPDATA%/PZToolkit/config.json` and existing values are reused.
+- Present a direct game toolbelt with connection, god mode and built-in editor
+  actions. No mod manager, folder controls, scenario files or authoring workflow.
+  Use existing saved settings automatically and keep raw output behind Details.
+  `lua_execute` uses fixed authenticated wire files without workspace/report
+  creation. Connection requires a fresh `ready=true` heartbeat.
+- `GAME_TOOL_NAMES` is the default CLI/MCP/GUI registry view. Keep schemas and
+  dispatch shared. Legacy authoring tools need explicit CLI --all-tools.
+- `discovery.py` owns bounded read-only detection used internally when no saved
+  connection exists and by legacy `folders_detect`. Scan Steam metadata and
+  known locations, never whole drives or normal saves as a test profile.
 
 ## Work Guidance
 

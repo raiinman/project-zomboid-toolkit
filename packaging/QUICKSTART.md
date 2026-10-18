@@ -1,50 +1,34 @@
 # Project Zomboid Toolkit for Windows
 
-Extract the ZIP into its own folder and double-click **PZToolkit.exe**. It opens
-the desktop app without a terminal. Python is bundled; no separate installation
-is needed.
+Open **PZToolkit.exe**, or find **Project Zomboid Toolkit** in the Start menu
+under **Dead Signal Interactive**. No terminal or Python installation is needed.
 
-The sidebar selects **Mods**, **In-game tests** and **Setup**. Leave **Show guide**
-enabled for eight short steps with arrows pointing at the next control. **Show me**
-opens the relevant page; **Previous** and **Next** revisit instructions without
-running actions. Successful actions advance the matching step. Resize the
-activity/results dock by dragging its divider when you need more output space.
+This is a connection to the game for you and Codex. You do not need to make a
+mod, select project folders or create a test-script file.
 
-1. In **Setup**, use first-launch detection or **Detect folders**, then review
-   your game installation, mod workspace and a new isolated
-   test profile. Choose **Save setup**, then **Prepare test profile**.
-2. In **Mods**, enter a mod ID, choose **Create mod**, then select it and choose
-   **Check selected** and **Deploy to test profile**. **Open mod folder** opens
-   its source files in Explorer for editing with your preferred editor.
-3. In **In-game tests**, choose **Launch Project Zomboid (test profile)**. Enable **PZ Toolkit Bridge**
-   and your mod in the game's Mods menu. Enter a disposable single-player world
-   and unpause it.
-4. Choose **Check bridge**, select a generated scenario, review or edit the Lua,
-   and save your changes. Select the trust checkbox, then **Run saved scenario**.
-   Results appear in the window. **Read game logs** and **Open reports** show
-   the captured evidence.
+1. Choose **Connect to game**. It installs **PZ Toolkit Bridge** if needed and
+   checks the connection.
+   Your saved connection settings are used automatically.
+2. Choose **Launch Project Zomboid (test profile)**.
+3. In the game, enable **PZ Toolkit Bridge** and your existing mod in Mods.
+   Load a single-player world and unpause it.
+4. Return here and check the connection. Open **Game tools** to use god-mode controls, built-in
+   editors or game logs. The app explains what to do if the connection is missing.
 
-App settings are stored in `%LOCALAPPDATA%/PZToolkit/config.json` by default.
-Detection checks Steam library metadata and common installation folders. Existing
-workspace/profile choices are retained. Multiple installs are listed in results
-for manual selection with Browse. Nothing is saved until **Save setup**.
-Use **Open config** to share an existing CLI/MCP configuration. The active
-settings file is shown in Setup. Keep the isolated profile outside normal
-Zomboid saves and mods. Relative folders resolve beside the configuration file.
+Debug starts with the game. God mode turns on when your character loads or
+respawns with the bridge enabled. You can switch it off for damage tests.
+The existing separate test settings and saves are preserved; your normal saves
+are not moved or replaced. Restart an existing game session to load an updated
+bridge helper.
 
-The separate **pz.exe** retains the CLI and MCP server for scripts and AI clients.
-For optional CLI use, pass the settings path shown in the app:
+For Codex or another MCP client, set the executable to the installed **pz.exe**
+and arguments to `["serve"]`. The app and MCP use the same saved connection at
+`%LOCALAPPDATA%/PZToolkit/config.json`. An explicit `--config` is available for
+existing integrations, but normal use needs no folder wizard.
 
-```powershell
-.\pz.exe --config "$env:LOCALAPPDATA/PZToolkit/config.json" tools
-```
+The advanced Lua control sends code directly to the loaded game. It needs no
+scenario file. Review and trust code before sending it. A timeout cannot cancel
+Lua already running. Editor requests are not proof that a window appeared.
 
-Run only trusted, terminating Lua scenarios. Timeout cannot cancel Lua already
-running in the game. In-world assertions have not yet been verified against the
-installed game. The executable packaging checks do not establish game acceptance.
-
-For MCP, set your client's command to the absolute `pz.exe` path and arguments to
-`["--config", "C:/absolute/path/pztoolkit.local.json", "serve"]`.
-
-Source, research and full documentation:
-https://github.com/raiinman/project-zomboid-toolkit
+Offline packaging checks do not establish live game acceptance. Current evidence
+and source: https://github.com/raiinman/project-zomboid-toolkit

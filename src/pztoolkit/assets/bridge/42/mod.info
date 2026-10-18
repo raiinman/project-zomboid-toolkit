@@ -1,4 +1,4 @@
 name=PZ Toolkit Bridge
 id=PZToolkitBridge
-description=Authenticated local scenario bridge for isolated debug single-player testing.
+description=Authenticated local scenario bridge and startup god mode for isolated debug single-player testing.
 versionMin=42.0

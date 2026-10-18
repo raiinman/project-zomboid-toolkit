@@ -1,83 +1,62 @@
-# Delivery plan
+# Toolbelt delivery plan
 
-This is the authoritative delivery checklist for the accepted mod development
-MVP. It uses this repository's `docs/` convention rather than duplicating tasks
-under another directory. See [design](design.md) for contracts and scope.
+The current product is a direct game/debug/editor connection for the user and
+Codex. Mod management, folder setup and saved scenario creation are not onboarding.
+The [architecture](design.md) owns contracts; [validation](validation.md) owns
+measured test and runtime evidence.
 
-| Order | Slice | Acceptance | Verification | Depends on |
-| --- | --- | --- | --- | --- |
-| 1 | Package and shared registry | Registry exposes typed schemas and validates dispatch | Registry success/error tests; package import | None |
-| 2 | Read installed Lua sources | Read/search stay in configured root and bound output | Fixture source tree, traversal and limits tests | 1 |
-| 3 | Mod authoring | Toolkit 42/ scaffold validates; supported invalid metadata/layout produces findings | Temporary mod fixtures and CLI invocation, JSON argument files | 1 |
-| 4 | CLI and MCP adapters | Tool lists and invocation use the shared registry | CLI subprocess checks, actual SDK stdio handshake | 1 |
-| 5 | Isolated deploy and launch | Copies and launcher args stay within toolkit profile | Temporary profile tests and launcher command inspection | 3 |
-| 6 | Bridge and scenario evidence | Correlated authenticated request, bounded wait, synchronous JSON result over .txt wire files | Offline response/error tests, compiler capability and single-player checks, inspect Lua syntax | 5 |
-| 7 | Live game acceptance | Bridge activates and game returns passing/failing assertions | Real debug single-player session with retained evidence | 6 |
-| 8 | Release preparation | README commands work, DOX indexes current, repo published | Full tests, package build, link check, GitHub remote inspection | 2-6 |
+## Delivery slices
 
-Parent and source adapters can develop in parallel after registry contracts are
-settled. The bridge and harness share a wire contract and need coordinated edits.
-Documentation and DOX may proceed independently of executable implementation.
+| Slice | Required outcome | Verification |
+| --- | --- | --- |
+| Shared game tools | Same 11 normal tools in desktop, CLI and MCP; legacy 17-tool view explicit | Schema parity, invocation and strict input tests |
+| Existing connection | Reuse saved configuration and existing isolated profile | Config/default-path checks, token preservation and backup fixtures |
+| Helper and launch | Install bridge, launch real game in debug, never require mod creation | Containment, helper upgrade and launch argument tests |
+| Direct game actions | Inline Lua, verified god-mode toggle and allowlisted debug editors | Mock transport, error/timeout and editor ID tests |
+| Beginner GUI | Explain connect, launch, in-game activation and check; tools need no folders or files | Native-widget tests and actual rendered inspection |
+| Artwork | Retain approved logo, use original decrepit workshop art, no green or figures | Asset checks plus native rendered review |
+| Windows delivery | Frozen app/CLI/MCP, per-user install, preserved settings and Start menu entry | Executable smoke checks and PC-side installation verification |
+| Live acceptance | Actual bridge, startup god mode, Lua outcomes and visible editor windows | Captured debug single-player evidence with game version |
 
-## Checkpoints
+## Current acceptance checklist
 
-- [x] Shared tool discovery and validation work through both adapters.
-- [x] Source, scaffold, validation, deployment, and profile checks pass offline.
-- [x] Harness distinguishes success, assertion failure, malformed response, and
-  timeout; JSON evidence survives each terminal outcome. A pass covers synchronous
-  assertions only, and `.txt` filenames satisfy the game's writer restrictions.
-- [x] Compiler-unavailable builds and paused/stale heartbeats produce useful
-  readiness diagnostics; both multiplayer client and server contexts are refused.
-- [ ] Real game acceptance passes with a recorded game version.
-- [x] README, package install, relevant tests, and publishing checks pass.
-- [x] Native desktop workflow uses the shared registry for mod management and
-  scenario runs, with serialized background work and explicit configuration saves.
+- [x] Shared registry and strict validation architecture already exists.
+- [x] Older scaffold/deploy operations remain available for existing scripts.
+- [ ] Final 11-tool public surface passes the complete offline suite.
+- [ ] Direct Lua works without scenario or per-command report files.
+- [ ] The final GUI has no mod manager, folder wizard or scenario-file workflow.
+- [ ] Saved settings, existing isolated profile and startup debug/god mode survive upgrade.
+- [ ] Final executable GUI, CLI and MCP checks pass for v0.4.0.
+- [ ] Final rendered default/minimum windows, help, errors and advanced controls are inspected.
+- [ ] Installed app and Start menu entry are verified on the actual PC.
+- [ ] Actual game acceptance passes with captured build and connection evidence.
 
-Keep unchecked game acceptance visible when the executable cannot be launched or
-the bridge cannot be exercised. Publishing an initial repository does not imply
-the live-game checkpoint passed.
-
-## Desktop redesign acceptance
-
-- [x] Charcoal, ivory and studio-red sidebar layout preserves the approved logo.
-- [x] Optional eight-step guide points to controls and supports manual navigation.
-- [x] Guide regression tests distinguish successful actions from failures and
-  unavailable bridge readiness.
-- [ ] All three pages, guide arrows, focus and error states pass native rendered
-  checks at default and minimum window sizes.
-- [x] Frozen v0.3.0 GUI, CLI and MCP pass executable checks and release CI.
-
-These checkpoints do not establish live in-world assertions.
+Unchecked items are intentional evidence boundaries, not claims of failure.
+Source implementation or mocked transport alone cannot check off native GUI or
+in-game acceptance. A physical stop of desktop automation leaves rendered work
+pending until the user authorizes it again.
 
 ## Verification method
 
-Run focused tests as each executable slice lands, then the full pytest suite.
-Smoke-test installed CLI commands and MCP stdio. Build a wheel and inspect that
-Lua bridge assets are included. Use temporary directories and mocked processes
-for offline tests, then test real launch/activation separately. Review correctness,
-path containment, token handling, timeout semantics, and adapter parity before
-commit. Record actual commands/results in the release handoff, not guessed
-counts in this plan.
+Run focused behavior checks, then the full suite and frozen executable probes.
+Verify installed-PC files rather than assuming the build environment's AppData
+paths are the user's PC paths. Preserve existing configuration, profile, tokens
+and unrelated game data. Keep generated local screenshots, logs and game files
+out of published commits. Perform DOX closeout before delivery.
 
-## Risks and response
+For a live run, enable the helper in Mods, load and unpause a debug single-player
+world, check fresh readiness and actual god mode, execute passing/failing inline
+Lua, then inspect requested editor windows. Record timeouts as unknown outcomes.
+Do not automatically retry calls that may already have changed the world.
 
-| Risk | Response |
-| --- | --- |
-| Installed build differs from target | Read installed Lua, record version, retain compatibility gap |
-| Mod activation differs by version | Verify activation in live client before claiming acceptance |
-| Lua scenario stalls game | Use trusted terminating snippets and disposable profile/save |
-| Compiler disabled by hotfix | Check runtime capability; explain unsupported compilation before submission |
-| World paused | Explain stale OnTick heartbeat and resume requirement |
-| Deferred assertion executes after success | Restrict MVP to synchronous scenarios; add explicit future completion protocol |
-| Console log cleared at size cap | Preserve JSON reports; disclose potentially incomplete log excerpts |
-| Timeout after code already ran | Return unknown outcome; inspect evidence before any retry |
-| Environment cannot launch game | Complete offline checks and publish explicit live-test limitation |
+## Continuing limits
 
-## Later capability checkpoints
+- Build/hotfix differences require shipped-source and actual runtime checks.
+- A paused game may stop heartbeat and command progress.
+- Host timeout cannot cancel Lua already running on the game thread.
+- Editor request success does not prove a visible editor window.
+- Multiplayer and server contexts remain unsupported.
+- Deferred callback assertions are outside synchronous request verdicts.
 
-Keep dependency/version-folder semantics, Java mods, maps/assets, multiplayer
-testing, and ZBSpec integration outside the current scaffold validator's claim.
-Plan each extension with its own build applicability and acceptance fixtures.
-Async scenarios need a tick-driven completion state machine before callback
-assertions can contribute to a scenario verdict. The four requested research
-passes and unresolved source gaps are recorded in `research.md`.
+The historical research and wiki coverage ledgers remain applicable. Further
+tools need their own bounds, error contracts and game acceptance criteria.

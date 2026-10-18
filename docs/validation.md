@@ -1,72 +1,61 @@
 # Validation record
 
-Checked October 17, 2026. This records evidence for the initial mod development
-implementation, separately from the research findings.
+## v0.4.0 direct game toolbelt
 
-| Check | Result |
+Checked October 17, 2026. Offline checks and real-game acceptance are separate.
+
+| Check | Evidence |
 | --- | --- |
-| Full offline suite | 107 tests passed on local Windows, Python 3.11, including 19 native GUI tests and 15 read-only discovery tests. Guide arrows, success/failure completion, readiness gating, contrast, first-launch detection, preview-only configuration and error handling are covered |
-| Folder discovery | Actual read-only detection found the installed game in its common install location. Fixture tests cover secondary Steam libraries, multiple installs, retained settings, malformed/inaccessible metadata, read bounds and normal-profile default rejection |
-| v0.3.1 delivery | Frozen GUI minimum-size Setup bounds, CLI bootstrap detection, shared tool discovery and actual MCP handshake passed. Installed the verified build per user, updated the existing Start menu shortcut and observed its installed window. Configuration hash remained unchanged. Installed folders_detect retained the existing game/workspace/profile paths |
-| v0.3.2 launcher wording | GUI, guide and bundled instructions use "Launch Project Zomboid (test profile)". Launcher is on a separate row. All 19 local GUI tests passed; source and frozen window checks confirmed Setup/test controls and trust checkbox fit at 1100 x 860. Frozen CLI/MCP checks passed. Installed v0.3.2, updated Start menu, verified executable digest and running installed window, and retained the configuration hash |
-| MCP connection | Actual stdio handshake, discovery, schema parity and invocation passed |
-| Boundary cases | Invalid inputs, ownership collisions, traversal and Windows junction regressions passed |
-| Harness transport | Correlation, stale responses, failure, malformed result, timeout, lock cleanup and reports passed |
-| Lua bridge | 31 Lua 5.1 mock tests passed; these are not Kahlua client execution |
-| Research changes | Allowed extensions, missing compiler, network guards, launch arguments and log rollover covered |
-| Dependencies | Frozen lock check and installed-package compatibility check passed |
-| Packaging | Source distribution and wheel built; required bridge/common assets found in wheel |
-| Windows executable | PyInstaller 6.22.3 single-file `pz.exe` built; CLI discovery, bundled bridge deployment, actual MCP handshake, schema parity, invocation and invalid input verified from a temporary working directory |
-| Native GUI | Real Tk widget flows cover setup validation, mod creation/check/deploy, saved scenario editing, trust gating, background responsiveness, pass/fail/timeout reports and cross-workspace discard safety |
-| Frozen desktop smoke | Windowed PE subsystem, actual mapped Tk window, three page controls, private font, artwork, background dispatch and bundled bridge deployment passed from a temporary directory |
-| Per-user installation | Downloaded the published v0.3.0 ZIP, verified its SHA-256, extracted under the user's local Programs directory and verified the installed GUI digest. Created Dead Signal Interactive / Project Zomboid Toolkit in Start menu, launched through that shortcut and observed the installed executable's window. Existing workspace/profile paths were retained in the default app configuration; installed CLI doctor found the game and prepared profile |
-| Earlier GUI visual inspection | The initial pale window was inspected through Computer Use; mod/scenario controls fit and bridge diagnostics worked |
-| Studio redesign | Native Setup, Mods and In-game tests inspected at 1280 x 960 and 1100 x 860, including guide arrow, sidebar focus/selection, hidden guide and bridge warning. The frozen default Setup page was also inspected. A clipped minimum-size Mods note was fixed by reserving footer space; its rendered confirmation is pending. The existing distressed logo PNG is unchanged and the facility panorama is not displayed |
-| Independent visual review | Four native captures reviewed with no blockers or major findings. Minor: the activity divider grip could be more prominent. Busy, empty and edited-scenario states have widget coverage; their complete rendered review remains outstanding |
-| Local CLI smoke | Doctor, profile preparation, sample scaffold/check/deploy passed |
-| Real game startup | Windows client process launched with isolated cachedir, debug and mods-only discovery |
-| Runtime startup artifacts | Isolated console/OpenGL initialization and version file created, reporting 42.20.0, revision a2947723ca |
-| First-launch activation | Observed default mod list cleared by first-launch reset, matching source research |
-| In-world assertions | Not yet verified; requires enabling bridge/sample and entering a disposable unpaused world |
+| Shared interface | Default CLI and MCP expose the same 11 game tools and schemas. Actual stdio initialize, discovery and invocation pass. Legacy authoring tools require explicit `--all-tools`. |
+| Inline commands | Fixed authenticated/correlated wire transport, timeout cleanup, strict arguments, allowlisted editor IDs and no workspace/scenario/report creation verified with fixtures. |
+| Running-game protection | Installing or refreshing the helper refuses a tracked running game before changing files. Two regression cases verify no mutation. |
+| Startup god mode | 46 Lua 5.1 mock cases cover spawn/respawn/tick fallback, local debug authentication guards, actual-state reporting, API failures and later manual disable. These are not native Kahlua execution. |
+| Native widgets | Connection/Game tools, shared dispatch, readiness gating, inline trust, beginner instructions and minimum-size widget bounds have offline Windows Tk coverage. Final rendered visual acceptance is pending. |
+| Game API basis | Read-only shipped `ISDebugMenu.lua` confirms debug, vehicle, attachment, animation and world-map entry points. `ISAdminPowerUI.lua` confirms `setGodMod`/`isGodMod`; TutorialSetup/ISPlayerData confirm index-only player creation events. |
+| Brand | Approved distressed logo PNG bytes preserved. Original derelict-workshop image generated with its prompt embedded and separately saved. No green or creature art in the new interface. |
+| Actual PC baseline | Remote Desktop Commander verified the saved game connection and owned isolated profile. Game was closed; no live bridge heartbeat was present. |
 
-The running test instance uses the ignored `.local/profile/` directory. Its
-full logs, configuration, generated mods and token are not published. Startup is
-partial live evidence; it does not establish bridge activation or a passing
-scenario.
+The final local Windows/Python 3.11 suite passed: **161 tests**, including 27
+native-widget cases and 46 Lua mocks. Frozen lock, dependency compatibility and
+independent source review passed. Both review findings (tracked-game helper
+refresh and repeated Lua trust invalidation) were fixed and covered.
+Both v0.4.0 frozen binaries passed verification: console CLI, bundled helper,
+actual MCP initialize/discovery/schema/invocation and invalid-input checks;
+windowed PE header, mapped fixture Tk window, both pages, Lua controls,
+minimum-size bounds, font and assets. This is an automated fixture smoke check,
+not a new visual inspection of the installed app.
+Actual-PC installation results follow as each completes.
+No source or fixture success establishes a connected world.
 
-The sample `HelloZomboid` mod and smoke scenario were generated locally. Next:
-enable **PZ Toolkit Bridge** and **HelloZomboid**, create a fresh single-player
-world, keep it unpaused, check `bridge_status`, then run `examples/smoke.json`.
+## Acceptance still pending
 
-The bridge reports ordinary Lua errors as failed scenarios but cannot preempt a
-running infinite loop, certify deferred callbacks, or suppress every game-side
-debugger/error presentation. A timeout is inconclusive. Console excerpts are
-bounded best-effort evidence with rollover/capture-limit flags.
+- Final rendered GUI review. The user stopped desktop control with Escape;
+  no subsequent native input, captures or window activation were attempted.
+- A loaded, unpaused single-player world confirming startup god mode, current
+  debug/connection state and each built-in editor opening visibly.
+- Live inline command execution and game assertion evidence.
 
-The DOX closeout updated root, package, test and GUI-asset contracts and child
-indexes. `docs/AGENTS.md` remains unchanged because documentation ownership and
-evidence rules already cover these records.
+Editor results mean a request completed, not that its window was visibly
+observed. Heartbeats can become stale while paused. A timeout is inconclusive.
+The bridge cannot preempt an infinite Lua loop or certify deferred callbacks.
 
-The [v0.3.0 GitHub workflow run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39089375898)
-passed all four jobs on Windows and Linux with Python 3.11 and 3.12 for
-implementation commit `fca1e89`. Each job verified the frozen lock, installed
-dependencies, checked dependency compatibility, compiled Python sources and ran
-the offline suite. This verifies the offline implementation across that matrix;
-it does not replace in-world game acceptance. The Windows 3.11 job also rebuilt
-and verified the GUI, CLI and MCP executables. Uploaded release SHA-256 digests
-match the locally verified binaries and ZIP. Native input resumed by the user
-during final frozen-window review, so remaining rendered states and footer
-confirmation are explicitly pending; the app was left open.
+## Earlier releases
 
-The [v0.3.1 folder-detection CI run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39090296966)
-passed all four Windows/Linux Python 3.11/3.12 jobs for `981853c`, including
-frozen executable checks on Windows 3.11. Release asset digests match the locally
-verified builds. This adds no new live-game acceptance evidence. The DOX pass
-updated root, source and test contracts; `docs/AGENTS.md` and GUI asset contracts
-are unchanged because ownership, indexes and artwork did not change.
+Versions 0.3.0 through 0.3.2 passed their Windows/Linux Python 3.11/3.12 CI
+matrices and frozen executable checks. The earlier mod/folder/scenario GUI
+was installed and partly inspected, but that visual evidence does not apply
+to this replacement toolbelt. Historical detailed records remain in Git.
 
-The [v0.3.2 launcher-label CI run](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39092850254)
-passed all four jobs for `7c52060`, including Windows executable checks. Release
-asset digests match local builds. Root preferences and DESIGN.md record the
-requested wording; source/test/docs owning AGENTS.md files remain unchanged
-because this label/layout adjustment changes no tool contract or ownership.
+- [v0.3.0 CI](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39089375898)
+- [v0.3.1 CI](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39090296966)
+- [v0.3.2 CI](https://github.com/raiinman/project-zomboid-toolkit/actions/runs/39092850254)
+
+Earlier client startup produced isolated runtime artifacts for Build 42.20.0,
+revision a2947723ca. That only established startup, not in-world execution.
+
+## DOX closeout
+
+Root, source, test and GUI asset contracts reflect the direct toolbelt. The
+`docs/AGENTS.md` ownership, index and evidence rules remain valid and are
+intentionally unchanged. No user mod, normal save or installed game content
+is part of the toolkit source changes.

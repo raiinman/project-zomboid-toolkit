@@ -110,3 +110,28 @@ Canvas arrow documentation. The existing distressed logo PNG is preserved and
 the facility panorama is no longer displayed. The eight-step guide adds control
 arrows and explicit success-dependent progression. Native rendered review and
 executable checks are tracked separately from source review and live game tests.
+
+
+## v0.4.0 direct toolbelt redesign
+
+The user's final clarification replaces the mod-management onboarding with a
+direct game/debug/editor toolbelt. The previous eight-step tour is historical,
+not the current product contract. No mod creation, folder wizard or saved Lua
+scenario is required to use the normal tool surface.
+
+The current user-library frontend-design guidance informs hierarchy and readable
+native controls. Impeccable onboarding/clarification guidance removes unexplained
+terms and puts the connection's next action first. Its documenter records actual
+Tk tokens in DESIGN.md and an extensions-only sidecar; web detection cannot
+certify a Windows Tk window. The user's explicit code-first redesign choice
+persists, so no new concept-approval or qualitative interview is introduced.
+
+Image generation produced original derelict-workshop artwork. The approved
+distressed logo remains unchanged. Rust, warm light and worn surfaces carry the
+mood while live controls remain readable, without green or creature imagery.
+Artwork provenance belongs with the bundled assets. Current Context7 and shipped
+game-source evidence inform library calls and debug editor entry points; those
+references do not establish that editors opened visibly in the game.
+
+Native rendered and live game checks remain separate from source, offline and
+executable checks. A stopped desktop session is not a completed visual review.

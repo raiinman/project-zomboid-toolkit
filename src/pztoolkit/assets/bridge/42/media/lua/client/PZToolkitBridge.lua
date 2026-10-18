@@ -6,6 +6,8 @@ local seen_ids = {}
 local next_poll = 0
 local next_status = 0
 local writer_warnings = {}
+-- One startup attempt per player instance. Later manual changes remain intact.
+local startup_players = setmetatable({}, { __mode = 'k' })
 
 local function json_string(value)
     local escaped = tostring(value):gsub('[%z\1-\31\\"]', function(char)
@@ -48,6 +50,49 @@ local function read_lines(path, max_bytes)
     if not ok or not closed then return nil, tostring(message or 'read failed') end
     return lines
 end
+
+local function local_debug_player(token, player)
+    return token ~= nil and #token > 0 and getDebug() == true
+        and not isClient() and not isServer() and player ~= nil
+end
+
+local function enable_startup_god_mode(player, token)
+    if not local_debug_player(token, player) or startup_players[player] then return end
+    local state = {}
+    startup_players[player] = state
+    local ok, message = pcall(function()
+        player:setGodMod(true)
+        if player:isGodMod() ~= true then error('player did not enable god mode') end
+    end)
+    if not ok then
+        state.error = tostring(message):sub(1, 1024)
+        print('[PZToolkitBridge] Startup god mode failed: ' .. state.error)
+    end
+end
+
+local function god_mode_status(player, token)
+    if not local_debug_player(token, player) then return false, nil end
+    local ok, value = pcall(function() return player:isGodMod() end)
+    local state = startup_players[player]
+    if not ok or type(value) ~= 'boolean' then
+        local message = ok and 'player god mode state unavailable' or tostring(value):sub(1, 1024)
+        if state and state.read_error ~= message then
+            print('[PZToolkitBridge] Cannot read god mode: ' .. message)
+            state.read_error = message
+        end
+        return false, message
+    end
+    return value, state and state.error
+end
+
+Events.OnCreatePlayer.Add(function(player_num, player)
+    local ok, message = pcall(function()
+        local token_lines = read_lines('pzt-token.txt', 1024)
+        player = player or getSpecificPlayer(player_num)
+        enable_startup_god_mode(player, token_lines and token_lines[1])
+    end)
+    if not ok then print('[PZToolkitBridge] Startup god mode failed: ' .. tostring(message)) end
+end)
 
 local function respond(id, ok, message)
     message = tostring(message)
@@ -96,6 +141,9 @@ local function on_tick()
     next_poll = now + POLL_MS
     local token_lines = read_lines('pzt-token.txt', 1024)
     local token = token_lines and token_lines[1]
+    local player = getPlayer()
+    -- Also covers loading this bridge after the player creation event.
+    enable_startup_god_mode(player, token)
     local compiler_available = type(loadstring) == 'function'
     local reason = 'ready'
     if not compiler_available then
@@ -104,7 +152,7 @@ local function on_tick()
         reason = 'debug mode required'
     elseif isClient() or isServer() then
         reason = 'single-player world required'
-    elseif getPlayer() == nil then
+    elseif player == nil then
         reason = 'player not loaded'
     elseif token == nil or #token == 0 then
         reason = 'authentication token unavailable'
@@ -112,10 +160,16 @@ local function on_tick()
     local ready = reason == 'ready'
     if now >= next_status then
         next_status = now + 1000
+        local god_mode, god_mode_error = god_mode_status(player, token)
         write_file('pzt-status.txt', '{"ready":' .. tostring(ready)
             .. ',"timestamp_ms":' .. string.format('%.0f', now)
             .. ',"build":' .. json_string(getCore():getVersion())
             .. ',"lua_compiler":' .. tostring(compiler_available)
+            .. ',"debug":' .. tostring(getDebug() == true)
+            .. ',"single_player":' .. tostring(not isClient() and not isServer())
+            .. ',"player_loaded":' .. tostring(player ~= nil)
+            .. ',"god_mode":' .. tostring(god_mode)
+            .. (god_mode_error and ',"god_mode_error":' .. json_string(god_mode_error) or '')
             .. ',"reason":' .. json_string(reason) .. '}')
     end
     if ready then poll(now, token) end

@@ -8,17 +8,24 @@ Windows desktop, native Tk. CLI and stdio MCP remain separate adapters.
 
 ## Users and Purpose
 
-The user develops Project Zomboid mods and wants to manage them and run in-game
-tests from a proper app window, without PowerShell or a Python installation.
-The same tools must remain available through CLI and MCP.
+The user and Codex already develop a mod directly. They want a Project Zomboid
+game/debug/editor bridge similar in purpose to UEFN Toolbelt, through a desktop
+app, CLI and MCP. The game's own mod browser and Steam Workshop handle mod
+management. Do not provide a mod manager or a folder/project setup workflow.
+Automatically use the existing saved game connection and its small Lua helper.
 
 ## Capabilities and Constraints
 
-- Configure isolated game profiles and development workspaces.
-- Detect game installs on first setup or with Detect folders. Preview paths,
-  retain existing workspace/profile choices and require Save setup to persist.
-- Create, check and deploy development mods; edit and run trusted Lua scenarios.
-- Present bridge readiness, game logs and retained reports in the app.
+- Connect to the existing game session and expose debug and built-in editors.
+- Automatically use existing game settings; preserve the installed game, mods
+  and saves. No new authoring workspace is required.
+- Run trusted inline Lua commands without scenario or report files per command.
+- Expose built-in vehicle/attachment/world-map editors, animation viewer and
+  debug menu through shared game-side requests. UI visibility needs live evidence.
+- Present bridge readiness, game logs and command results in the app.
+- Launch isolated tests with debug enabled and activate god mode at character
+  load/respawn through the authenticated single-player bridge. Report actual
+  god-mode state, including activation failures; preserve later manual disable.
 - Preserve existing installations, normal saves, mods, source contracts and
   asynchronous responsiveness. Live in-world assertions remain unverified.
 - Deliver a windowed `PZToolkit.exe` alongside the console `pz.exe`.
@@ -27,25 +34,23 @@ The same tools must remain available through CLI and MCP.
 
 Dead Signal Interactive branding is required. Keep the existing approved
 distressed logo PNG unchanged, including the studio name and recognizable shape.
-The current direction is a charcoal, ivory and studio-red workbench with sidebar
-navigation and a resizable activity dock. The user explicitly rejected green.
+The current direction is a decrepit industrial toolbelt with beginner-friendly
+instructions, original generated workshop artwork and quiet readable controls.
+The user explicitly rejected green.
 No actual aliens, predators, zombies or other creature figures belong in the UI.
 
-The user requested guidance for someone learning the app. Provide an optional
-eight-step walkthrough, concise instructions and arrows pointing to relevant
-actions. Advance automatically only after the corresponding successful operation;
-require actual bridge readiness before advancing that step. Manual guide
-navigation never establishes operational success.
+The user rejected both the mod-first workflow and an optional mod-manager page.
+Start with Connect, actual connection feedback, debug/god mode and built-in
+editor actions. No folder controls or personal-mod creation. Explain actions in
+plain language. Launch alone never establishes connection; require fresh status.
 
 The user selected building the working GUI directly. Apply the relevant guidance
 from their 3d-and-web library within native Tk controls.
 
 ## Evidence
 
-The new GUI exists and has native widget regression coverage, including guide
-progression and readiness checks. All three pages have native default/minimum
-layout inspection. Frozen GUI, CLI and MCP smoke checks passed. Complete rendered
-coverage of busy, empty and edited-scenario states remains outstanding.
-Current measured outcomes belong in docs/validation.md. The user's existing Dead
-Signal brand kit supplies the original logo. A screenshot of a scenario result
-does not establish game execution unless it came from the live bridge.
+The direct game toolbelt has offline protocol, Lua-mock and native-widget
+regression checks. These do not establish live game or rendered visual
+acceptance. Desktop control was stopped by the user, so final visual review
+remains pending. Current measured build, install and test results belong in
+`docs/validation.md`. Editor requests do not prove the editor appeared.

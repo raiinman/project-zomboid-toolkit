@@ -1,64 +1,161 @@
-# Dead Signal studio workbench
+---
+name: Project Zomboid Toolkit
+description: A clear game toolbelt in a derelict industrial workshop.
+colors:
+  amber: "#e5b26d"
+  soot: "#141416"
+  steel: "#262326"
+  edge: "#414047"
+  ivory: "#f3eee4"
+  ash: "#c4bcb1"
+  control: "#303035"
+  field: "#1b1b1f"
+  selected: "#733c32"
+  status: "#242328"
+typography:
+  display:
+    fontFamily: "Oxanium SemiBold, Segoe UI"
+    fontSize: "24pt"
+    fontWeight: 600
+  rail-title:
+    fontFamily: "Oxanium SemiBold, Segoe UI"
+    fontSize: "17pt"
+    fontWeight: 600
+  title:
+    fontFamily: "Oxanium SemiBold, Segoe UI"
+    fontSize: "13pt"
+    fontWeight: 600
+  body:
+    fontFamily: "Segoe UI"
+    fontSize: "11pt"
+  code:
+    fontFamily: "Consolas"
+    fontSize: "11pt"
+spacing:
+  field: "10px"
+  control-x: "14px"
+  control-y: "10px"
+  page: "16px"
+  shell-x: "24px"
+  shell-y: "20px"
+components:
+  button-primary:
+    backgroundColor: "{colors.amber}"
+    textColor: "{colors.soot}"
+    padding: "10px 14px"
+  button-secondary:
+    backgroundColor: "{colors.control}"
+    textColor: "{colors.ivory}"
+    padding: "10px 14px"
+  field:
+    backgroundColor: "{colors.field}"
+    textColor: "{colors.ivory}"
+    padding: "10px"
+  navigation:
+    backgroundColor: "{colors.steel}"
+    textColor: "{colors.ash}"
+    padding: "13px 14px"
+  status:
+    backgroundColor: "{colors.status}"
+    textColor: "{colors.ivory}"
+    padding: "12px"
+---
 
-The user requested a new GUI using their 3d-and-web skill library, explicitly
-rejected green, and required keeping the existing distressed studio logo. The
-new layout is a native studio workbench, with sidebar navigation and a resizable
-activity dock. Product truth stays in PRODUCT.md;
-tool architecture stays in docs/design.md.
+# Design System: Project Zomboid Toolkit
 
-## Direction contract
+## Overview
 
-The app remains a recognizable native mod-development tool: Setup, Mods and
-In-game tests pages; conventional buttons, forms, tables and an editor. The visual
-world contributes type, palette, density and the retained distressed studio mark.
-It never changes action names or invents fictional telemetry.
+**Creative North Star: "The Derelict Workshop"**
 
-- Graphite `#141416`, raised charcoal `#1e1e22`, quiet dividers `#414047`, ivory
-  `#f1edef`, muted platinum `#bcb5bc`, and studio red `#ef8b82`. No green in
-  navigation, controls, progress, selection, focus or status surfaces.
-- Actual Dead Signal Interactive logo, with user-approved scratched/grimed
-  surfaces while preserving its DS shape and wordmark.
-- Remove the panoramic facility image from the UI. Keep the distressed logo
-  byte-for-byte, placed in the navigation rail. No creatures or fictional gauges.
-- Bundled Oxanium SemiBold for short display headings. Segoe UI body copy and
-  Consolas code preserve native readability and familiar data editing.
-- Errors and unknown test outcomes keep literal recovery text and distinct
-  colors. Never imply a test passed through decorative green lighting alone.
-- No flicker, strobe, fake enemy counters, fake connectivity or intrusive motion.
-  Progress animation runs only during an actual background tool call.
+A readable game toolbelt inside a derelict workshop. Worn industrial artwork and the approved distressed Dead Signal Interactive logo carry the atmosphere; instructions and native controls stay quiet, clear and intact. The user rejected green and creature imagery.
 
-## Layout plan and review
+The app serves the existing game and the user's existing work. Its visual
+hierarchy leads from a clear connection action to useful game tools. It does not
+borrow the complexity of an editor or turn internal transport files into tasks.
 
-Left alignment, a 238-pixel studio rail, workspace-specific page titles, clear
-selection and a vertically resizable activity dock replace the banner-and-tabs
-composition. Existing mod tables and scenario controls remain direct and familiar.
+**Key Characteristics:**
+- Warm industrial decay in imagery
+- Plain instructions before technical detail
+- Native controls with explicit state
 
-The initial plan risked being only a red recolor of the old horror console. The
-revised plan removes the wide scenic header, changes navigation and work-area
-structure, gives results a useful resize handle, and shows progress only while
-work runs. This makes the new layout functionally different without changing
-tool contracts. The library's frontend-design guidance governs hierarchy and
-content; its motion guidance keeps animation tied to real work, not decoration.
+## Colors
 
-## Guided workflow
+Warm amber marks action and focus; soot and steel keep the image's decay from
+competing with the interface. Ivory is the reading color and ash carries secondary
+instructions. Muted rust identifies selection. Error and warning treatments
+remain distinct from ordinary status.
 
-An optional guide strip shows eight steps: Save setup, Prepare test profile,
-Create mod, Check selected, Deploy to test profile, Launch Project Zomboid (test profile), Check bridge,
-and Run saved scenario. A real arrow highlights the matching button on the
-current page. Show me opens that page; Previous and Next revisit instructions.
-Hide the guide through Show guide in the sidebar.
+**The Quiet Controls Rule.** Keep texture in imagery and solid surfaces behind live instructions and controls.
 
-Successful operations advance the corresponding step. Failed actions and a
-not-ready bridge leave it in place. Manual guide navigation never changes tool
-outcomes. Keep the arrow clear during background work and preserve normal mouse
-and keyboard access to the highlighted control.
+## Typography
 
-## Verification
+Oxanium SemiBold gives short headings an industrial character, with Segoe UI as
+the platform fallback. Segoe UI carries instructions and controls; Consolas is
+reserved for code and technical output. The token sizes are native Tk points,
+not browser pixels. Do not apply texture, all-caps styling or distortion to
+instructional copy. Oxanium's required OFL notice stays bundled.
 
-Inspect the native 1280 x 960 default and 1100 x 860 minimum window sizes across
-all three pages, including
-focus, selection, busy, empty, error and edited-scenario states. Preserve the
-existing GUI regression tests and frozen CLI/MCP smoke checks. Windows-native
-Tk is outside the HTML/CSS detector's scope. A fresh finish review uses captures
-of the actual app, not a generated mockup. Live game assertions remain a separate
-acceptance gate.
+## Layout
+
+The native window opens at 1280 by 960 and permits a minimum of 1100 by 860.
+The fixed sidebar is 238 pixels wide, with 18-pixel internal padding. The main
+shell uses 24-pixel horizontal and 20-pixel vertical padding; page padding is
+16 pixels. Copy wraps with the available width. Notebook page selection is
+presented through sidebar buttons rather than duplicate native tabs.
+
+A contained 130-pixel workshop image is an atmosphere surface, not a control
+background. Technical output and advanced code disclose deliberately. The exact
+current pages and their tasks belong in the desktop surface brief.
+
+## Elevation & Depth
+
+Tonal surfaces and restrained borders establish depth. Native buttons supply
+hover, focus, pressed and disabled feedback; there are no decorative shadows or
+idle animation. Progress appears only while a real worker action is running.
+
+**The Literal State Rule.** Show connection and god-mode claims only from actual tool results; decoration never stands in for evidence.
+
+## Shapes
+
+Use familiar rectangular Tk controls and native focus/selection behavior.
+No invented radius scale is defined. Distress lives in the approved logo and
+original artwork rather than in button silhouettes or text.
+
+## Components
+
+### Buttons
+
+The next connection action is prominent. Secondary controls use dark surfaces;
+keyboard focus uses the amber accent. Disabled and busy states prevent duplicate
+submissions. Plain next-step instructions support the next action without proving that it
+succeeded.
+
+### Inputs
+
+Dark code fields use ivory text and an amber insertion/focus indicator. Code is
+monospaced. Trust is explicit before sending privileged inline Lua. No folder
+wizard or saved-scenario editor belongs in normal connection flow.
+
+### Navigation and disclosure
+
+Sidebar selection is visible through tonal contrast and text. Details start closed and built-in editors precede the advanced Lua tab;
+ordinary results remain readable without raw JSON.
+Do not add a mod manager or an authoring tour to the navigation.
+
+### Status
+
+Show useful plain-language results, including a next action when not connected.
+Warning and error feedback must not look like passing game evidence. Request
+completion cannot certify that a game editor window appeared.
+
+## Do's and Don'ts
+
+### Do:
+- Do preserve the approved distressed logo PNG exactly.
+- Do describe the next useful game action in plain language.
+- Do keep technical output collapsed and inline Lua in the advanced tab.
+
+### Don't:
+- Don't introduce green or creature figures.
+- Don't distress instructions, field text or controls.
+- Don't turn mod creation, folder selection or saved scenarios into connection prerequisites.

@@ -25,10 +25,10 @@ with tempfile.TemporaryDirectory(prefix="pz-gui-exe-") as directory:
     evidence = json.loads(report.read_text())
     assert evidence["ok"] and evidence["window_mapped"] and evidence["bridge_assets"], evidence
     assert evidence["branding_loaded"] and evidence["display_font"] == "Oxanium SemiBold", evidence
-    assert evidence["tabs"] == ["Setup", "Mods", "In-game tests"]
-    assert evidence["navigation"] == ["Mods", "In-game tests", "Setup"]
-    assert evidence["guide_steps"] == 8
-    assert evidence["setup_controls_fit"], "Setup buttons must fit at minimum window size"
-    assert evidence["test_controls_fit"], "Test controls must fit at minimum window size"
+    assert evidence["tabs"] == ["Connection", "Game tools"]
+    assert evidence["navigation"] == ["Connection", "Game tools"]
+    assert evidence["details_collapsed"]
+    assert set(evidence["tools"]) == {"doctor", "bridge_install", "game_launch", "bridge_status", "logs_read", "source_search", "source_read", "lua_execute", "god_mode", "debug_editors", "editor_open"}
+    assert all(evidence["bounds"].values()), evidence
 
-print("Windowed executable, native widgets, background tool dispatch and bundled bridge passed")
+print("Windowed executable, direct game toolbelt, shared registry and bundled bridge passed")

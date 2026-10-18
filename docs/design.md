@@ -1,206 +1,131 @@
-# Project Zomboid Toolkit design
+# Project Zomboid toolbelt architecture
 
-## Objective and accepted scope
+## Objective and scope
 
-Give mod developers and AI clients the same tools to inspect installed game
-sources, create and validate mods, deploy into an isolated profile, and run Lua
-assertions inside a real game. The user authorized implementation, GitHub
-repository creation, installation of their DOX framework, relevant skills from
-their skill library, and parallel subagents. Routine design decisions below fit
-that scope and do not need repeated approval.
+Connect the desktop app, CLI and Codex/MCP to a running debug single-player game.
+The user edits an existing mod; toolkit use must not require mod creation, a
+folder wizard, a new workspace or saved scenario files. The game and Steam retain
+mod-management authority. This is a game/debug/editor toolbelt, without a claim
+of UEFN Toolbelt feature parity.
 
-The initial compatibility target is Build 42 on Windows. Exact compatibility is
-determined by the installed game and captured live evidence. Mod layout and Lua
-API assumptions require validation against that build. Dedicated server
-administration and character control remain later modules.
-The four requested research passes are consolidated in [research](research.md).
-Build 42 is not one fixed API: compiler availability and file-writer restrictions
-need checks against the actual runtime, even within the same major build.
+Build 42 on Windows is the initial target. Installed build evidence determines
+compatibility. The four research passes are in [research](research.md); a hotfix
+can change compiler capability even within Build 42.
 
-## Capability map
+## Shared registry and adapters
 
-| ID | Responsibility | Depends on | Initial scope |
-| --- | --- | --- | --- |
-| shared-tools | Typed tool definitions, discovery, common invocation and errors | None | MVP |
-| mod-development | Inspect game Lua, scaffold/validate mods, deploy isolated copies | shared-tools | MVP |
-| game-harness | Isolated launch, Lua bridge requests, evidence and log collection | mod-development | MVP |
-| cli | Tool discovery and JSON invocation for scripts | shared-tools | MVP |
-| mcp | stdio tools for AI clients | shared-tools | MVP |
-| desktop | Native mod management, scenario editing and in-game test controls | shared-tools | Windows app |
-| server-administration | Server configuration, lifecycle, logs and administration | shared-tools | Roadmap |
-| gameplay | Observe game state and execute character actions/scenarios | game-harness | Roadmap |
+One Python registry owns names, descriptions, schemas, validation and dispatch.
+`GAME_TOOL_NAMES` selects the 11 normal public tools used by CLI, MCP and GUI:
+`doctor`, `bridge_install`, `game_launch`, `bridge_status`, `logs_read`,
+`source_search`, `source_read`, `lua_execute`, `god_mode`, `debug_editors`,
+`editor_open`.
 
-Build order: shared-tools, then mod-development and adapters, then game-harness.
-The architecture stays extensible through additional tool registrations rather
-than premature implementations of roadmap modules.
+The complete 17-tool registry retains older file/scaffold operations for existing
+scripts, explicitly selected with CLI `--all-tools`. Their presence is backwards
+compatibility, not the product's main workflow. Neither mod authoring nor a
+scenario file is a dependency of the game connection.
 
-Folder detection is a read-only shared capability. `discovery.py` checks bounded
-Steam library indexes and known install locations, validates game markers and
-lists ambiguous installs. GUI first setup and Detect folders preview its result
-without changing saved configuration. CLI `detect` works before config exists;
-configured CLI/MCP calls expose the same implementation as `folders_detect`.
-Preserve workspace/profile choices and keep normal Zomboid saves outside defaults.
+The desktop uses native Windows Tk. CLI uses JSON and exit statuses. MCP uses the
+official Python SDK 1.x (`>=1.12.4,<2`) over stdio, reserving stdout for protocol
+messages. Both executables bundle Python and bridge assets. CLI and app default
+to the saved `%LOCALAPPDATA%/PZToolkit/config.json` connection; `--config` remains
+available to existing integrations. Keep current configuration rather than
+migrating it into a new project.
 
-## Accepted decisions
+## Connection and game authority
 
-1. **Python core, thin adapters.** One registry owns tool names, descriptions,
-   input schemas, and callables. CLI and MCP derive discovery from that registry
-   and dispatch through the same call path. This prevents the interfaces from
-   drifting. Python 3.11+ supplies the standard-library core. The optional MCP
-   Python SDK v1 dependency (`>=1.12.4,<2`) provides stdio protocol handling.
-2. **Filesystem bridge first.** A small client Lua mod reads requests and writes
-   responses through the game's own file APIs. This avoids native injection and
-   a network listener. Local file access is still privileged: bridge tokens,
-   profile files, and local processes form a trust boundary.
-3. **Isolated profiles.** Toolkit-managed cachedir and mod directories hold
-   configuration, generated mods, bridge state, and evidence. Installed game
-   sources remain read-only. Normal saves and mods are outside the write scope.
-4. **Evidence is part of the interface.** Offline validation proves structure
-   and transport logic. Only game-produced, correlated responses prove Lua
-   execution. Timeout, malformed output, authentication failure, and assertion
-   failure are distinct from success.
+`bridge_install` installs or refreshes the small Lua helper using the existing
+profile settings. Changed owned helper files receive backups and the token is
+preserved. `game_launch` uses the installed game, debug and the existing isolated
+cache/profile. Normal saves, unrelated mods and installed game content remain
+outside write scope. The separate profile is a safety boundary, not a required
+user-created project. The UI exposes no folder or mod manager.
 
-## Public contracts
+The user enables PZ Toolkit Bridge and their existing mod in the game's Mods
+menu, loads a single-player world and unpauses. Launch success alone is not a
+connection. `bridge_status` requires a fresh loaded-world heartbeat and reports
+actual god mode and readiness failures with a useful next step.
 
-The registry is authoritative for names and input schemas. Input validation
-occurs before dispatch. Both adapters preserve JSON-compatible success data and
-machine-readable errors; the CLI additionally returns a failing exit status.
-MCP stdout contains protocol messages only. Text logs use stderr or files.
+God mode is enabled once for every loaded or respawned player after token and
+single-player/debug checks pass. `OnCreatePlayer` handles startup; `OnTick`
+covers loading after that event. Heartbeats report actual state and API failures.
+Manual disablement remains possible for damage tests rather than being undone
+every tick. Before launch, changed helper Lua is refreshed with a backup; tracked
+running games prevent unsafe refresh.
 
-Filesystem inputs resolve within their declared roots. Read and search operations
-bound work and output. Mod deployment copies a validated project into a toolkit
-profile; overwriting an existing deployment must be an explicit operation.
-The `mod_check` contract is structural validation of the toolkit's `42/` scaffold.
-It does not select among arbitrary compatible version folders or validate all
-mod.info dependency semantics, asset formats, Java integrations, or multiplayer
-behavior. A structurally valid scaffold still needs real game acceptance.
-Automatic retries of state-changing game requests are unsafe because a lost
-response does not show whether execution occurred.
+## Direct commands and built-in editors
 
-The bridge request file is `pzt-request.txt`. JSON heartbeat and response payloads
-use `pzt-status.txt` and `pzt-response.txt`: the inspected Build 42.20 file-writer
-extension allowlist permits `.txt` and rejects `.json`. Host-generated reports may
-still use `.json`, since Python writes those files outside the game's writer API.
-The request carries a token, unique request ID, expiry, and Lua code. The client
-consumes it on ticks only after a player is loaded, validates the envelope, and
-emits JSON evidence correlated to the request ID. Request size, response size,
-and caller wait time are bounded. The bridge is limited to an explicitly enabled
-local debug single-player session with both `isClient()` and `isServer()` false.
-Readiness includes compiler capability: `loadstring` was disabled in 42.20.4 and
-restored in 42.21. Missing compilation support produces an actionable diagnostic.
-The token grants local code execution, not a Lua sandbox. Lua code must terminate;
-a host-side timeout cannot interrupt arbitrary code already running on a game
-tick. Keep test snippets small and use a disposable test save.
+`lua_execute` accepts bounded inline Lua and a wait timeout. It shares the
+existing authenticated transport but does not require a workspace/scenario file
+or persist a report for each command. Fixed profile wire files carry requests,
+status and responses. `god_mode` uses that transport to set and verify state.
 
-A passing scenario certifies only assertions completed synchronously during that
-request. Registering a callback and returning does not wait for it or correlate
-its later failures. Asynchronous completion is a separate roadmap capability.
-Heartbeat and execution currently depend on `OnTick`; pausing the world can make
-the heartbeat stale and prevent work from completing until the world resumes.
+`debug_editors` lists allowlisted IDs: `debug`, `vehicle`, `attachment`,
+`animation`, `world_map`. `editor_open` requests the corresponding built-in UI
+using signatures inspected in shipped `ISDebugMenu` source. Availability depends
+on the actual runtime. Successful execution proves the request completed, not
+that its window is visible; native inspection is separate evidence.
 
-## Structure and development workflow
+## Trust and execution contracts
 
-`src/pztoolkit/` owns the core, adapters, harness, and packaged bridge assets.
-`tests/` owns offline behavior checks. `docs/plan.md` owns delivery checkpoints.
-The root and child AGENTS.md hierarchy defines stable contribution contracts.
+Game source reads/searches stay bounded and read-only within the installation.
+Paths are confined to their declared roots; linked paths and traversal are
+rejected. Validate inputs before side effects. MCP and CLI preserve the same
+machine-readable results and errors. Do not retry mutating game calls blindly:
+a missing response does not establish that execution did not occur.
 
-Windows delivery uses a windowed `PZToolkit.exe` for the desktop workflow and a
-separate console `pz.exe` for CLI/MCP (`serve` selects stdio MCP). Both bundle
-their runtime and required bridge data. `packaging/build.ps1` builds both and a ZIP with config/examples;
-`packaging/verify_exe.py` exercises the frozen CLI, asset deployment and MCP
-protocol from a temporary directory. `packaging/verify_gui.py` checks the GUI PE
-subsystem, actual mapped Tk window, page controls, background dispatch and bundled
-bridge deployment. The frozen entry points reset the Windows
-DLL directory so external game processes inherit normal DLL lookup paths.
+The Lua bridge uses `pzt-request.txt`, `pzt-status.txt` and `pzt-response.txt` for
+JSON payloads because the inspected Build 42.20 writer permits `.txt` and rejects
+`.json`. Requests carry a token, unique ID, expiry and code. The client validates
+the envelope and correlates bounded synchronous responses. Local tokens grant
+game-level code execution, not a Lua sandbox.
 
-The native Tk adapter has Mods, In-game tests and Setup pages selected from a
-sidebar, with a resizable activity/results dock. Its optional eight-step guide
-points to the next action and advances after the matching successful operation;
-bridge guidance requires a ready heartbeat. Previous, Next and Show me navigate
-instructions without executing tools or claiming success. Configuration is
-saved explicitly, defaulting to `%LOCALAPPDATA%/PZToolkit/config.json`; an existing
-CLI/MCP config can be opened in the app. GUI actions use `Toolkit.call`, with one
-worker at a time and queue-delivered results on the UI thread. Unsaved settings
-block tool actions. Workspace switching resolves edited scenarios before changing
-roots. The scenario editor enforces the core size/containment limits, requires
-Save before Run and an explicit trust checkbox. Failed assertions, setup errors,
-missing bridge heartbeats and inconclusive timeouts have distinct feedback.
-Closing while a job is active waits for completion; it cannot cancel game Lua.
+Only a loaded debug single-player session is accepted, with both `isClient()`
+and `isServer()` false. Readiness includes compiler capability: `loadstring` was
+disabled in 42.20.4 and restored in 42.21. API documentation alone does not prove
+a function is enabled in a particular hotfix. OnTick heartbeat/execution can
+stall while paused. Lua must terminate; the host timeout cannot interrupt code
+already running and reports an unknown outcome.
 
-Create a Python environment, install the package with development extras, and run
-`python -m pytest`. Use the installed CLI's `--help` and tool listing as the source
-of truth for runnable commands. Development tests use pytest and Lupa for local
-Lua execution checks. Prefer explicit typed inputs, direct functions, and small
-named helpers. Add a dependency only when the standard library or an existing
-dependency cannot serve the need.
+Only synchronous assertions count. Registering callbacks does not correlate
+their later results with the completed request. Legacy `harness_run` retains its
+saved-scenario/report contract behind the explicit full registry; direct commands
+do not inherit that file workflow. Logs may truncate or reset, so excerpts can be
+incomplete and must not be described as a complete execution history.
 
-With `pztoolkit.local.json` configured for the installed game and toolkit profile,
-the development loop is:
+## Desktop contract
 
-```powershell
-pz --config pztoolkit.local.json tools
-pz --config pztoolkit.local.json call mod_create --args-file examples/create-mod.json
-pz --config pztoolkit.local.json call profile_prepare
-pz --config pztoolkit.local.json call mod_deploy --args-file examples/check-mod.json
-pz --config pztoolkit.local.json call game_launch
-pz --config pztoolkit.local.json call bridge_status
-pz --config pztoolkit.local.json call harness_run --args-file examples/smoke.json
-```
+Connect first, then use game tools. Explain the helper, real game launch,
+in-game activation and loaded-world check in plain language. Keep one useful
+next action prominent. Existing settings load automatically. No mod creation,
+folder selection, deployment tour or scenario saving is required. Technical
+output and inline Lua are disclosed deliberately; trust remains explicit.
 
-UTF-8 JSON argument files avoid differences in native-command quoting between
-PowerShell versions. Inline `--args` remains available when the shell preserves
-the JSON string correctly.
+All actions use `Toolkit.call` on one worker at a time, with UI-thread queue
+results. Errors, not-ready states and timeouts have plain distinct messages.
+Closing during an action cannot cancel game Lua. The approved distressed logo
+is retained byte-for-byte; original decrepit workshop imagery, readable native
+controls and no-green styling follow [the visual system](../DESIGN.md).
 
-Activate the test mods and load a disposable world before bridge checks and
-scenarios. After deploying code changes, restart/load the test world to exercise
-the new files. Hot reload is not part of the acceptance contract. Source tool
-paths are relative to the installed `media/` root, such as `lua/...` or `scripts/...`.
-Keep the configuration and generated token local and ignored by Git.
+## Delivery and acceptance
 
-## MVP acceptance criteria
+`packaging/build.ps1` builds windowed `PZToolkit.exe`, console `pz.exe` and their
+ZIP. A versioned output directory preserves an older running executable.
+Frozen entry points reset the Windows DLL directory before launching the game.
+Executable checks cover the actual mapped GUI, bundled helper and real MCP
+handshake. Source tests cover shared schemas, isolation and protocol behavior.
 
-- CLI and MCP enumerate the same tools and dispatch identical validated inputs.
-- Invalid inputs and paths fail before side effects.
-- A generated toolkit `42/` scaffold passes local structural validation; invalid
-  supported structure produces useful findings without claiming full mod validity.
-- Source search/read operates only within the configured game root with bounds.
-- Deployments and launch commands target a dedicated profile, with normal game
-  saves and mods unaffected.
-- Offline tests cover profile isolation, malformed/expired responses, correlation,
-  timeouts, `.txt` wire filenames, compiler capability, single-player context,
-  bounded synchronous results, and observable adapter behavior.
-- A live session can activate the bridge, run a passing and failing scenario, and
-  retain JSON evidence and relevant logs. Until this is exercised, report live
-  game verification as outstanding.
+A release must keep offline tests, executable checks, rendered GUI review and
+live game acceptance distinct. Live acceptance needs a recorded game version,
+bridge activation, startup god mode, direct passing/failing Lua and visible
+built-in editor inspection. Neither mocks nor a successful editor request can
+replace that evidence. See [plan](plan.md) and [validation](validation.md).
 
-## Boundaries
+## Later capabilities
 
-Always validate inputs, preserve local game data, and report evidence limits.
-Ask only for unresolved consequential choices, unavailable access, or actions
-outside the authorized scope. Never publish game assets, secrets, saves, or
-tokens; never mark a simulated response as game validation.
-
-## Compatibility and open risks
-
-Build 42 layout, launcher arguments, mod activation, and game file APIs can vary
-with updates. Inspect installed Lua and capture the installed version during live
-acceptance. A request timeout has unknown execution outcome. Long-running Lua
-can stall the client. Multiplayer and dedicated servers need separate trust and
-execution models before bridge support is expanded.
-API signatures do not guarantee every function is enabled in a particular
-security hotfix. Online docs, community event notes, local source, and runtime
-evidence have different authority and build applicability; keep those distinct.
-Console logs may be cleared and rewritten at a size limit, so byte-offset log
-excerpts can be incomplete across truncation; JSON reports remain primary evidence.
-
-## Roadmap
-
-Server administration adds process lifecycle, configuration validation, log
-inspection, and an authenticated administration channel. Gameplay adds read-only
-snapshots before bounded actions, deterministic scenario setup, and replayable
-evidence. Mod development remains a complete independent workflow throughout.
-Broader mod development adds dependency and version-folder resolution, Java
-integration, map and asset validation, multiplayer test matrices, and optional
-ZBSpec integration after checking its licensing and compatibility. Tick-driven
-scenario completion must correlate deferred assertions before asynchronous tests
-can count as passed. Each addition requires separate acceptance criteria.
+Add further bounded game state/actions and editor operations through the shared
+registry. Multiplayer/server administration needs its own trust model. Deferred
+assertions need explicit correlated completion before counting as passed.
+Legacy mod validation still checks only the toolkit's `42/` structure, not full
+asset/dependency/Java/map or multiplayer compatibility. Never broaden that claim
+without separate acceptance fixtures.

@@ -38,7 +38,7 @@ def scaffold(toolkit, root, name="ExampleMod"):
 
 def cli(config, *arguments):
     return subprocess.run(
-        [sys.executable, "-m", "pztoolkit", "--config", str(config), *arguments],
+        [sys.executable, "-m", "pztoolkit", "--config", str(config), "--all-tools", *arguments],
         text=True, capture_output=True, timeout=30, check=False,
     )
 
@@ -201,6 +201,26 @@ def test_game_launch_passes_isolated_profile_debug_and_mod_discovery_arguments(s
     assert arguments[arguments.index("-modfolders") + 1] == "mods"
     assert options["cwd"] == root / "game"
     assert (root / "profile" / "pzt-game.pid").read_text(encoding="utf-8") == "424242"
+    assert result["debug"] is True
+    assert result["god_mode_on_spawn"] is True
+    assert not (root / "profile/backups").exists(), "Unchanged bridge must not be redeployed on every launch"
+
+
+def test_launch_refreshes_old_bridge_without_rotating_token(sandbox, monkeypatch):
+    toolkit, _, root = sandbox
+    toolkit.profile_prepare()
+    (root / "game/ProjectZomboid64.exe").touch()
+    client = root / "profile/mods/PZToolkitBridge/42/media/lua/client/PZToolkitBridge.lua"
+    client.write_text("-- older toolkit bridge", encoding="utf-8")
+    token = (root / "profile/Lua/pzt-token.txt").read_bytes()
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: SimpleNamespace(pid=424242))
+    toolkit.game_launch()
+    expected = Path(__file__).parents[1] / "src/pztoolkit/assets/bridge/42/media/lua/client/PZToolkitBridge.lua"
+    assert client.read_bytes() == expected.read_bytes()
+    assert (root / "profile/Lua/pzt-token.txt").read_bytes() == token
+    backups = list((root / "profile/backups").glob("PZToolkitBridge-*/42/media/lua/client/PZToolkitBridge.lua"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "-- older toolkit bridge"
 
 
 def test_deploy_refuses_unowned_collision_and_preserves_sibling_mod(sandbox):
@@ -412,7 +432,7 @@ def test_mcp_stdio_and_cli_expose_same_tools_schemas_and_results(sandbox):
     assert doctor.returncode == 0, doctor.stderr
 
     async def check():
-        params = StdioServerParameters(command=sys.executable, args=["-m", "pztoolkit", "--config", str(config), "serve"])
+        params = StdioServerParameters(command=sys.executable, args=["-m", "pztoolkit", "--config", str(config), "--all-tools", "serve"])
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
@@ -429,5 +449,33 @@ def test_mcp_stdio_and_cli_expose_same_tools_schemas_and_results(sandbox):
                 assert invalid.isError
                 extra = await session.call_tool("mod_create", {"name": "Wrong", "unexpected": True})
                 assert extra.isError
+
+    asyncio.run(asyncio.wait_for(check(), timeout=30))
+
+
+def test_default_cli_and_mcp_expose_only_game_toolbelt_tools(sandbox):
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+    from pztoolkit.core import GAME_TOOL_NAMES
+
+    _, config, _ = sandbox
+    base = [sys.executable, "-m", "pztoolkit", "--config", str(config)]
+    listed = subprocess.run([*base, "tools"], capture_output=True, text=True, check=True, timeout=30)
+    schemas = json.loads(listed.stdout)
+    assert {item["name"] for item in schemas} == set(GAME_TOOL_NAMES)
+    assert not {"mod_create", "mod_deploy", "folders_detect", "harness_run"} & set(GAME_TOOL_NAMES)
+    editors = subprocess.run([*base, "call", "debug_editors"], capture_output=True, text=True, check=True, timeout=30)
+
+    async def check():
+        params = StdioServerParameters(command=base[0], args=[*base[1:], "serve"])
+        async with stdio_client(params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                remote = await session.list_tools()
+                assert {tool.name: tool.inputSchema for tool in remote.tools} == {
+                    item["name"]: item["inputSchema"] for item in schemas}
+                result = await session.call_tool("debug_editors", {})
+                assert not result.isError
+                assert json.loads(result.content[0].text) == json.loads(editors.stdout)
 
     asyncio.run(asyncio.wait_for(check(), timeout=30))
