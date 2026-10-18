@@ -57,8 +57,12 @@ stdio MCP initialize/list/call probe: the exact 11-tool registry, `doctor`,
 `ready=true`, `debug=true`, `god_mode=true` and built-in operations available.
 Custom Lua remains unavailable on this build. Editor IDs were discovered without
 opening editors or changing the game. The probe shut down its own server process.
-This chat has not rediscovered the native MCP tool namespace; its host connection
-may need refreshing even though registration and actual server transport pass.
+This chat subsequently discovered the native MCP namespace, but direct `doctor`
+and `bridge_status` calls exposed cached settings for an old development profile
+and a stale 42.20.0 heartbeat. The verified installed-app connection is now pinned
+explicitly with `--config` in MCP registration. Only the identified stale stdio
+process was stopped. The host currently reports `Transport closed` and requires
+its app-side server Restart control; native chat readiness remains pending.
 After the probe, the installed CLI still exists with SHA-256
 `3F0EDBC0E9658629AF70610C337C94C22774C1480B33DB68517778B198987E2C`.
 There are zero new Defender 1116/1117 events after scan completion, and protection

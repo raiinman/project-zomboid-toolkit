@@ -11,6 +11,10 @@ trusted signing, Defender scan gate and frozen application smoke checks.
 
 - Distribute complete separate `PZToolkit/` and `pz/` one-folder bundles with
   their support files. Keep native EXE entry points and no user Python requirement.
+- Register the installed MCP entry point with explicit `--config <saved game
+  connection> serve` arguments. Verify this chat's native `doctor` and fresh
+  `bridge_status` against the actual PC profile. A standalone stdio probe does
+  not establish that an existing chat has reconnected or selected that profile.
 - Build with a controlled PATH, locked dependencies, `--onedir --noupx --clean`.
   Reject native inputs outside the active Python, virtual environment and Windows
   system directories, including Codex runtime/libheif origins.

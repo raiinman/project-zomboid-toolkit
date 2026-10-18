@@ -38,6 +38,16 @@ Do not upload private binaries or source to review services without explicit
 authorization. Microsoft accepts developer submissions for disputed detections;
 the affected old build stays blocked pending a determination.
 
+## Installed MCP connection
+
+Register `pz/pz.exe` with `--config <saved game connection JSON> serve`, using
+the saved installed-app connection explicitly. Confirm the native chat's `doctor`
+reports the same isolated profile as the app, then require a fresh `bridge_status`
+for live readiness. An old development heartbeat or a separate stdio test cannot
+establish this chat's connection. After changing a running server's configuration,
+use the app's server Restart control if its existing transport remains cached.
+Never restart the game or take desktop input to repair an MCP transport.
+
 ## Signing prerequisite
 
 The PC has the Windows SDK SignTool but no code-signing certificate with a
